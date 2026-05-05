@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Shoebox
+GenericName=Photo Gallery
+Comment=Browse and sync photos from self-hosted services
+Exec=shoebox %U
+Icon=@APP_ID@
+Terminal=false
+Type=Application
+Categories=GNOME;GTK;Graphics;Photography;
+StartupNotify=true
+X-Purism-FormFactor=Workstation;Mobile;
+X-KDE-FormFactor=desktop;handset;tablet;

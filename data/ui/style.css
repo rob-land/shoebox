@@ -1,0 +1,30 @@
+/* Shoebox styling */
+
+.gallery-thumb {
+  background-color: shade(@view_bg_color, 0.95);
+  border-radius: 6px;
+  transition: transform 120ms ease;
+}
+
+.gallery-thumb:hover {
+  background-color: shade(@view_bg_color, 0.9);
+}
+
+.gallery-thumb.local-only {
+  outline: 2px solid @accent_bg_color;
+  outline-offset: -2px;
+}
+
+.gallery-thumb.syncing {
+  opacity: 0.6;
+}
+
+.setup-page {
+  padding: 24px;
+}
+
+.detail-toolbar {
+  background-color: alpha(black, 0.6);
+  color: white;
+  padding: 6px;
+}

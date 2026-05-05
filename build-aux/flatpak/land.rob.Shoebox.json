@@ -1,0 +1,40 @@
+{
+  "app-id": "land.rob.Shoebox",
+  "runtime": "org.gnome.Platform",
+  "runtime-version": "50",
+  "sdk": "org.gnome.Sdk",
+  "command": "shoebox",
+  "finish-args": [
+    "--socket=wayland",
+    "--socket=fallback-x11",
+    "--share=ipc",
+    "--device=dri",
+    "--share=network",
+    "--filesystem=xdg-pictures",
+    "--filesystem=xdg-videos",
+    "--filesystem=xdg-download",
+    "--talk-name=org.freedesktop.secrets",
+    "--system-talk-name=org.freedesktop.NetworkManager",
+    "--system-talk-name=org.freedesktop.UPower",
+    "--talk-name=org.freedesktop.Notifications"
+  ],
+  "cleanup": [
+    "/include",
+    "/lib/pkgconfig",
+    "/share/man",
+    "*.la",
+    "*.a"
+  ],
+  "modules": [
+    {
+      "name": "shoebox",
+      "buildsystem": "meson",
+      "sources": [
+        {
+          "type": "dir",
+          "path": "../.."
+        }
+      ]
+    }
+  ]
+}

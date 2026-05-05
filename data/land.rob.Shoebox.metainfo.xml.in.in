@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>@APP_ID@</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Shoebox</name>
+  <summary>Browse and sync self-hosted photos</summary>
+  <description>
+    <p>
+      Shoebox is an adaptive GTK4 / libadwaita gallery client for self-hosted
+      photo services. It is designed for mobile Linux phones first but works
+      equally well on desktops. The initial backend is Immich; the architecture
+      is pluggable so additional services such as PhotoPrism can be added.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Browse server photos in a unified gallery alongside unsynced local photos</li>
+      <li>Sync photos from chosen local directories to your server</li>
+      <li>Restrict sync to Wi-Fi and/or while charging</li>
+      <li>Phone- and desktop-friendly adaptive UI</li>
+    </ul>
+  </description>
+  <developer id="land.rob">
+    <name>Shoebox contributors</name>
+  </developer>
+  <url type="homepage">https://codeberg.org/robland/shoebox</url>
+  <url type="bugtracker">https://codeberg.org/robland/shoebox/issues</url>
+  <launchable type="desktop-id">@APP_ID@.desktop</launchable>
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <recommends>
+    <control>keyboard</control>
+    <control>pointing</control>
+    <control>touch</control>
+  </recommends>
+  <content_rating type="oars-1.1"/>
+</component>

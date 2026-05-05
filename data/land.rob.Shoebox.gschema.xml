@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="shoebox">
+  <enum id="land.rob.Shoebox.SyncNetwork">
+    <value nick="any" value="0"/>
+    <value nick="wifi" value="1"/>
+    <value nick="unmetered" value="2"/>
+  </enum>
+
+  <schema id="land.rob.Shoebox" path="/land/rob/shoebox/">
+    <key name="window-width" type="i">
+      <default>900</default>
+      <summary>Window width</summary>
+    </key>
+    <key name="window-height" type="i">
+      <default>700</default>
+      <summary>Window height</summary>
+    </key>
+    <key name="window-maximized" type="b">
+      <default>false</default>
+      <summary>Window maximized</summary>
+    </key>
+
+    <key name="setup-complete" type="b">
+      <default>false</default>
+      <summary>First-run setup completed</summary>
+    </key>
+
+    <key name="sync-directories" type="as">
+      <default>[]</default>
+      <summary>Local directories to scan and sync</summary>
+    </key>
+
+    <key name="sync-network" enum="land.rob.Shoebox.SyncNetwork">
+      <default>'wifi'</default>
+      <summary>When to sync based on network</summary>
+    </key>
+
+    <key name="sync-charging-only" type="b">
+      <default>false</default>
+      <summary>Only sync while the device is charging</summary>
+    </key>
+
+    <key name="sync-auto" type="b">
+      <default>true</default>
+      <summary>Sync automatically in the background</summary>
+    </key>
+
+    <key name="thumbnail-size" type="i">
+      <default>256</default>
+      <range min="128" max="512"/>
+      <summary>Thumbnail size in pixels</summary>
+    </key>
+  </schema>
+</schemalist>

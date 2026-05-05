@@ -1,0 +1,2 @@
+option('profile', type: 'combo', choices: ['default', 'devel'], value: 'default',
+       description: 'Build profile (devel uses a separate app id and icon)')
