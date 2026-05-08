@@ -2,11 +2,17 @@
 build/
 _build/
 _install/
+_flatpak/
+_flatpak_x86_64/
+_flatpak_aarch64/
 .flatpak-builder/
 build-aux/flatpak/.state-*/
 build-aux/flatpak/.build-*/
 build-aux/flatpak/.repo-*/
 dist/
+repo/
+*.flatpak
+*.log
 data/gschemas.compiled
 
 # Python

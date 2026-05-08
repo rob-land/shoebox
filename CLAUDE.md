@@ -43,14 +43,19 @@ is the single declaration site.
 
 ```
 meson.build, meson_options.txt
+build-all.sh                   multi-arch flatpak driver (root)
+fix-flatpak-deps.py             tarball -> wheel patcher
+requirements.txt                Python runtime deps (currently empty)
+run.sh                          dev launcher: meson install + run from _install
 build-aux/flatpak/
   land.rob.Shoebox.json        Flatpak manifest
-  build-flatpak.sh             multi-arch driver (in-tree)
 data/
   land.rob.Shoebox.{desktop,metainfo.xml,gschema.xml}.in*
   shoebox.gresource.xml
   ui/                          Gtk.Builder XML templates
   icons/
+po/
+  LINGUAS, POTFILES.in, meson.build (no translations yet)
 src/
   meson.build
   shoebox.in                   Launcher (Meson-substituted)
@@ -60,6 +65,8 @@ src/
     backends/                  base + Immich
     sync/                      manager, scanner, conditions
     ui/                        Python-side view modules
+tests/
+  meson.build, test_smoke.py   pytest target wired into `meson test`
 ```
 
 ## Key conventions

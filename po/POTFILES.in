@@ -1,0 +1,8 @@
+data/land.rob.Shoebox.desktop.in.in
+data/land.rob.Shoebox.metainfo.xml.in.in
+src/shoebox/application.py
+src/shoebox/window.py
+src/shoebox/ui/setup.py
+src/shoebox/ui/gallery.py
+src/shoebox/ui/detail.py
+src/shoebox/ui/preferences.py

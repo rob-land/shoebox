@@ -1,0 +1,8 @@
+# Python runtime dependencies for Shoebox.
+#
+# Shoebox currently uses only the standard library plus PyGObject
+# bindings (Gtk, Adw, Soup, Secret, Gio) — all provided by the GNOME
+# 50 Flatpak runtime. There are no PyPI dependencies to bundle.
+#
+# Add one entry per line if that changes; build-all.sh will regenerate
+# build-aux/flatpak/python3-deps.json from this file on the next run.
