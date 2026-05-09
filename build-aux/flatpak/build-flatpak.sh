@@ -12,8 +12,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-MANIFEST="$SCRIPT_DIR/land.rob.Shoebox.json"
-APP_ID=land.rob.Shoebox
+MANIFEST="$SCRIPT_DIR/land.rob.shoebox.json"
+APP_ID=land.rob.shoebox
 RUNTIME_VERSION='50'
 DIST_DIR="$REPO_ROOT/dist"
 DEFAULT_ARCHES=(x86_64 aarch64)

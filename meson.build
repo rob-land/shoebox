@@ -11,7 +11,7 @@ python = import('python')
 
 py = python.find_installation('python3', modules: ['gi'])
 
-app_id = 'land.rob.Shoebox'
+app_id = 'land.rob.shoebox'
 app_name = 'Shoebox'
 
 prefix = get_option('prefix')

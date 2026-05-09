@@ -8,7 +8,7 @@ later). Phone-first, desktop-friendly. Local SQLite catalog plus
 libsecret-stored tokens, GSettings prefs. NetworkManager + UPower
 gating for Wi-Fi-only / unmetered / charging-only sync.
 
-App ID: `land.rob.Shoebox`. License: GPL-3.0-or-later.
+App ID: `land.rob.shoebox`. License: GPL-3.0-or-later.
 
 Written entirely by Claude. PRs welcome.
 
@@ -36,7 +36,7 @@ is the single declaration site.
   collection has done is still pending here)
 - **Build system**: Meson + Ninja
 - **Packaging**: Flatpak (manifest:
-  `build-aux/flatpak/land.rob.Shoebox.json`), GNOME 50 SDK
+  `build-aux/flatpak/land.rob.shoebox.json`), GNOME 50 SDK
 - **Storage**: SQLite catalog, libsecret tokens, GSettings prefs
 
 ## Source layout
@@ -48,9 +48,9 @@ fix-flatpak-deps.py             tarball -> wheel patcher
 requirements.txt                Python runtime deps (currently empty)
 run.sh                          dev launcher: meson install + run from _install
 build-aux/flatpak/
-  land.rob.Shoebox.json        Flatpak manifest
+  land.rob.shoebox.json        Flatpak manifest
 data/
-  land.rob.Shoebox.{desktop,metainfo.xml,gschema.xml}.in*
+  land.rob.shoebox.{desktop,metainfo.xml,gschema.xml}.in*
   shoebox.gresource.xml
   ui/                          Gtk.Builder XML templates
   icons/

@@ -69,7 +69,7 @@ def SetupPage(window: 'ShoeboxWindow') -> Adw.NavigationPage:
     box.set_margin_start(18)
     box.set_margin_end(18)
 
-    icon = Gtk.Image.new_from_icon_name('land.rob.Shoebox')
+    icon = Gtk.Image.new_from_icon_name('land.rob.shoebox')
     icon.set_pixel_size(96)
     box.append(icon)
 

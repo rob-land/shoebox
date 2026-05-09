@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist gettext-domain="shoebox">
-  <enum id="land.rob.Shoebox.SyncNetwork">
+  <enum id="land.rob.shoebox.SyncNetwork">
     <value nick="any" value="0"/>
     <value nick="wifi" value="1"/>
     <value nick="unmetered" value="2"/>
   </enum>
 
-  <schema id="land.rob.Shoebox" path="/land/rob/shoebox/">
+  <schema id="land.rob.shoebox" path="/land/rob/shoebox/">
     <key name="window-width" type="i">
       <default>900</default>
       <summary>Window width</summary>
@@ -30,7 +30,7 @@
       <summary>Local directories to scan and sync</summary>
     </key>
 
-    <key name="sync-network" enum="land.rob.Shoebox.SyncNetwork">
+    <key name="sync-network" enum="land.rob.shoebox.SyncNetwork">
       <default>'wifi'</default>
       <summary>When to sync based on network</summary>
     </key>

@@ -1,5 +1,5 @@
-data/land.rob.Shoebox.desktop.in.in
-data/land.rob.Shoebox.metainfo.xml.in.in
+data/land.rob.shoebox.desktop.in.in
+data/land.rob.shoebox.metainfo.xml.in.in
 src/shoebox/application.py
 src/shoebox/window.py
 src/shoebox/ui/setup.py

@@ -1,5 +1,5 @@
 {
-  "app-id": "land.rob.Shoebox",
+  "app-id": "land.rob.shoebox",
   "runtime": "org.gnome.Platform",
   "runtime-version": "50",
   "sdk": "org.gnome.Sdk",

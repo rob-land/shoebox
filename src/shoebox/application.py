@@ -16,7 +16,7 @@ from .window import ShoeboxWindow
 class ShoeboxApplication(Adw.Application):
     def __init__(self, version: str = '0.0.0'):
         super().__init__(
-            application_id='land.rob.Shoebox',
+            application_id='land.rob.shoebox',
             flags=Gio.ApplicationFlags.DEFAULT_FLAGS,
         )
         self.version = version
@@ -32,7 +32,7 @@ class ShoeboxApplication(Adw.Application):
 
         css = Gtk.CssProvider()
         try:
-            css.load_from_resource('/land/rob/Shoebox/style.css')
+            css.load_from_resource('/land/rob/shoebox/style.css')
             display = Gdk.Display.get_default()
             if display is not None:
                 Gtk.StyleContext.add_provider_for_display(
@@ -74,7 +74,7 @@ class ShoeboxApplication(Adw.Application):
     def _show_about(self) -> None:
         about = Adw.AboutDialog(
             application_name='Shoebox',
-            application_icon='land.rob.Shoebox',
+            application_icon='land.rob.shoebox',
             developer_name='Shoebox contributors',
             version=self.version,
             website='https://codeberg.org/robland/shoebox',

@@ -8,7 +8,7 @@ from typing import Optional
 from gi.repository import Secret
 
 SCHEMA = Secret.Schema.new(
-    'land.rob.Shoebox.Account',
+    'land.rob.shoebox.Account',
     Secret.SchemaFlags.NONE,
     {
         'backend': Secret.SchemaAttributeType.STRING,

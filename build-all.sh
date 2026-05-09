@@ -105,9 +105,9 @@ for arch in "${ARCHES[@]}"; do
     echo
     echo "==== Building Shoebox for ${arch} ===="
     flatpak-builder --arch="$arch" --repo=repo --force-clean \
-        "$builddir" build-aux/flatpak/land.rob.Shoebox.json
+        "$builddir" build-aux/flatpak/land.rob.shoebox.json
     echo "==== Bundling ${bundle} ===="
-    flatpak build-bundle --arch="$arch" repo "$bundle" land.rob.Shoebox
+    flatpak build-bundle --arch="$arch" repo "$bundle" land.rob.shoebox
     ls -lh "$bundle"
 done
 
