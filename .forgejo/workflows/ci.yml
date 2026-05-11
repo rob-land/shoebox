@@ -8,6 +8,9 @@ on:
 
 jobs:
   build-and-test:
+    # Codeberg-only: the selfhosted runner at git.rob.land builds
+    # flatpaks via publish.yml, no need to run the meson test job too.
+    if: startsWith(github.server_url, 'https://codeberg.org')
     runs-on: codeberg-small
     container:
       image: catthehacker/ubuntu:act-latest
