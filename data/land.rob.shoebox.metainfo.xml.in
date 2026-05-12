@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>@APP_ID@</id>
+  <id>land.rob.shoebox</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
   <name>Shoebox</name>
@@ -25,7 +25,7 @@
   </developer>
   <url type="homepage">https://codeberg.org/robland/shoebox</url>
   <url type="bugtracker">https://codeberg.org/robland/shoebox/issues</url>
-  <launchable type="desktop-id">@APP_ID@.desktop</launchable>
+  <launchable type="desktop-id">land.rob.shoebox.desktop</launchable>
   <requires>
     <display_length compare="ge">360</display_length>
   </requires>

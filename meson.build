@@ -11,8 +11,7 @@ python = import('python')
 
 py = python.find_installation('python3', modules: ['gi'])
 
-app_id = 'land.rob.shoebox'
-app_name = 'Shoebox'
+application_id = 'land.rob.shoebox'
 
 prefix = get_option('prefix')
 bindir = prefix / get_option('bindir')
@@ -24,7 +23,7 @@ localedir = prefix / get_option('localedir')
 conf = configuration_data()
 conf.set('PYTHON', py.full_path())
 conf.set('VERSION', meson.project_version())
-conf.set('APP_ID', app_id)
+conf.set('APP_ID', application_id)
 conf.set('PKGDATADIR', pkgdatadir)
 conf.set('MODULEDIR', py.get_install_dir())
 conf.set('LOCALEDIR', localedir)

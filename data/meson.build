@@ -1,21 +1,22 @@
-desktop_file = configure_file(
-  input: app_id + '.desktop.in.in',
-  output: app_id + '.desktop',
-  configuration: conf,
-  install: true,
+desktop_file = i18n.merge_file(
+  input:       'land.rob.shoebox.desktop.in',
+  output:      'land.rob.shoebox.desktop',
+  type:        'desktop',
+  po_dir:      '../po',
+  install:     true,
   install_dir: datadir / 'applications',
 )
 
-metainfo_file = configure_file(
-  input: app_id + '.metainfo.xml.in.in',
-  output: app_id + '.metainfo.xml',
-  configuration: conf,
-  install: true,
+metainfo_file = i18n.merge_file(
+  input:       'land.rob.shoebox.metainfo.xml.in',
+  output:      'land.rob.shoebox.metainfo.xml',
+  po_dir:      '../po',
+  install:     true,
   install_dir: datadir / 'metainfo',
 )
 
 install_data(
-  app_id + '.gschema.xml',
+  'land.rob.shoebox.gschema.xml',
   install_dir: datadir / 'glib-2.0' / 'schemas',
 )
 
@@ -29,7 +30,7 @@ gnome.compile_resources(
 )
 
 install_data(
-  'icons/hicolor/scalable/apps' / app_id + '.svg',
+  'icons/hicolor/scalable/apps' / application_id + '.svg',
   install_dir: datadir / 'icons/hicolor/scalable/apps',
 )
 
