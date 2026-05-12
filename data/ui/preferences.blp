@@ -1,0 +1,60 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $ShoeboxPreferencesDialog: Adw.PreferencesDialog {
+  Adw.PreferencesPage {
+    title: _("Account");
+    icon-name: "avatar-default-symbolic";
+
+    Adw.PreferencesGroup {
+      title: _("Signed in");
+
+      Adw.ActionRow account_row {
+        title: _("Not signed in");
+
+        [suffix]
+        Gtk.Button sign_out_button {
+          visible: false;
+          label: _("Sign out");
+          valign: center;
+          clicked => $_on_sign_out();
+          styles ["destructive-action"]
+        }
+      }
+    }
+  }
+
+  Adw.PreferencesPage {
+    title: _("Sync");
+    icon-name: "emblem-synchronizing-symbolic";
+
+    Adw.PreferencesGroup {
+      title: _("When to sync");
+
+      Adw.SwitchRow auto_row {
+        title: _("Sync automatically");
+        subtitle: _("Periodic background sync when conditions are met");
+      }
+
+      Adw.ComboRow network_row {
+        title: _("Network");
+      }
+
+      Adw.SwitchRow charging_row {
+        title: _("Only while charging");
+        subtitle: _("Pause uploads when on battery");
+      }
+    }
+
+    Adw.PreferencesGroup folders_group {
+      title: _("Folders");
+      description: _("Photos in these folders will be uploaded.");
+
+      Adw.ButtonRow add_folder_row {
+        title: _("Add folder…");
+        start-icon-name: "list-add-symbolic";
+        activated => $_on_add_folder();
+      }
+    }
+  }
+}
