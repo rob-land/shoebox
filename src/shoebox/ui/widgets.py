@@ -6,7 +6,7 @@ import hashlib
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
-from gi.repository import Gdk, GdkPixbuf, GLib, GObject, Gio, Gtk
+from gi.repository import Adw, Gdk, GdkPixbuf, GLib, GObject, Gio, Gtk
 
 from ..database import Asset
 from ..worker import run_async
@@ -83,45 +83,27 @@ def _load_thumbnail_bytes(
 # ---- thumbnail widget --------------------------------------------------------
 
 
+@Gtk.Template(resource_path='/land/rob/shoebox/ui/thumbnail-tile.ui')
 class ThumbnailTile(Gtk.Overlay):
     """Square tile with lazy-loaded image and a "local only" indicator."""
 
     __gtype_name__ = 'ShoeboxThumbnailTile'
 
+    picture: Gtk.Picture = Gtk.Template.Child()
+    badge:   Gtk.Image   = Gtk.Template.Child()
+    spinner: Adw.Spinner = Gtk.Template.Child()
+
     def __init__(self):
         super().__init__()
         self._size = 256
         self._asset: Optional[Asset] = None
-        self.set_size_request(140, 140)
-
-        self._picture = Gtk.Picture()
-        self._picture.set_can_shrink(True)
-        self._picture.set_content_fit(Gtk.ContentFit.COVER)
-        self._picture.add_css_class('gallery-thumb')
-        self.set_child(self._picture)
-
-        self._badge = Gtk.Image.new_from_icon_name('folder-symbolic')
-        self._badge.set_halign(Gtk.Align.END)
-        self._badge.set_valign(Gtk.Align.START)
-        self._badge.set_margin_top(4)
-        self._badge.set_margin_end(4)
-        self._badge.add_css_class('osd')
-        self._badge.set_visible(False)
-        self.add_overlay(self._badge)
-
-        self._spinner = Adw_spinner_or_fallback()
-        self._spinner.set_halign(Gtk.Align.CENTER)
-        self._spinner.set_valign(Gtk.Align.CENTER)
-        self.add_overlay(self._spinner)
 
     def bind(self, asset: Asset, size: int, backend: Optional['Backend']) -> None:
         self._asset = asset
         self._size = size
-        self._picture.set_paintable(None)
-        self._badge.set_visible(asset.is_local_only)
-        self._spinner.set_visible(True)
-        if hasattr(self._spinner, 'start'):
-            self._spinner.start()
+        self.picture.set_paintable(None)
+        self.badge.set_visible(asset.is_local_only)
+        self.spinner.set_visible(True)
 
         def load() -> Optional[bytes]:
             return _load_thumbnail_bytes(asset, size, backend)
@@ -129,14 +111,12 @@ class ThumbnailTile(Gtk.Overlay):
         def done(data: Optional[bytes]) -> None:
             if self._asset is not asset:
                 return  # row was rebound to a different asset
-            self._spinner.set_visible(False)
-            if hasattr(self._spinner, 'stop'):
-                self._spinner.stop()
+            self.spinner.set_visible(False)
             if not data:
                 return
             try:
                 texture = Gdk.Texture.new_from_bytes(GLib.Bytes.new(data))
-                self._picture.set_paintable(texture)
+                self.picture.set_paintable(texture)
             except GLib.Error:
                 pass
 
@@ -144,11 +124,6 @@ class ThumbnailTile(Gtk.Overlay):
 
 
 def Adw_spinner_or_fallback() -> Gtk.Widget:
-    """Adw.Spinner is in libadwaita 1.6+, fall back to GtkSpinner otherwise."""
-    try:
-        from gi.repository import Adw
-        return Adw.Spinner()
-    except (AttributeError, TypeError):
-        s = Gtk.Spinner()
-        s.start()
-        return s
+    """Adw.Spinner shim — kept for gallery.py until it migrates to a
+    @Gtk.Template that can declare the widget directly in Blueprint."""
+    return Adw.Spinner()
