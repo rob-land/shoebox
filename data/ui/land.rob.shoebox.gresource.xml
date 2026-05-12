@@ -3,5 +3,6 @@
   <gresource prefix="/land/rob/shoebox">
     <file alias="ui/style.css">style.css</file>
     <file preprocess="xml-stripblanks" alias="ui/detail.ui">detail.ui</file>
+    <file preprocess="xml-stripblanks" alias="ui/thumbnail-tile.ui">thumbnail-tile.ui</file>
   </gresource>
 </gresources>

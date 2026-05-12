@@ -2,6 +2,7 @@ blueprint_compiler = find_program('blueprint-compiler')
 
 blueprint_sources = files(
   'detail.blp',
+  'thumbnail-tile.blp',
 )
 
 blueprints = custom_target('blueprints',
