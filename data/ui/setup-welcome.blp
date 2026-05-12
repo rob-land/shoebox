@@ -1,0 +1,70 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $ShoeboxSetupWelcome: Adw.NavigationPage {
+  title: _("Setup");
+  can-pop: false;
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      title-widget: Adw.WindowTitle {
+        title: _("Welcome");
+        subtitle: "";
+      };
+    }
+
+    content: Gtk.ScrolledWindow {
+      hexpand: true;
+      vexpand: true;
+
+      child: Adw.Clamp {
+        maximum-size: 520;
+        tightening-threshold: 400;
+
+        child: Gtk.Box {
+          orientation: vertical;
+          spacing: 18;
+          margin-top: 36;
+          margin-bottom: 36;
+          margin-start: 18;
+          margin-end: 18;
+
+          Gtk.Image {
+            icon-name: "land.rob.shoebox";
+            pixel-size: 96;
+          }
+
+          Gtk.Label {
+            label: _("Welcome to Shoebox");
+            wrap: true;
+            justify: center;
+            styles ["title-1"]
+          }
+
+          Gtk.Label {
+            label: _("Connect to a self-hosted photo service, then choose any local folders you would like to back up.");
+            wrap: true;
+            justify: center;
+            styles ["dim-label"]
+          }
+
+          Adw.PreferencesGroup {
+            title: _("Service");
+
+            Adw.ComboRow backend_row {
+              title: _("Backend");
+            }
+          }
+
+          Gtk.Button {
+            label: _("Continue");
+            halign: center;
+            clicked => $_on_continue();
+            styles ["suggested-action", "pill"]
+          }
+        };
+      };
+    };
+  };
+}

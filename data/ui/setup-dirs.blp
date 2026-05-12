@@ -1,0 +1,73 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $ShoeboxSetupDirs: Adw.NavigationPage {
+  title: _("Folders");
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      title-widget: Adw.WindowTitle {
+        title: _("Folders");
+        subtitle: "";
+      };
+    }
+
+    content: Gtk.ScrolledWindow {
+      hexpand: true;
+      vexpand: true;
+
+      child: Adw.Clamp {
+        maximum-size: 620;
+        tightening-threshold: 480;
+
+        child: Gtk.Box {
+          orientation: vertical;
+          spacing: 18;
+          margin-top: 24;
+          margin-bottom: 24;
+          margin-start: 18;
+          margin-end: 18;
+
+          Gtk.Label {
+            label: _("Folders to sync");
+            styles ["title-2"]
+          }
+
+          Gtk.Label {
+            label: _("Photos in these folders will be uploaded. You can change this later in Preferences. Skip to finish setup without syncing.");
+            wrap: true;
+            justify: center;
+            styles ["dim-label"]
+          }
+
+          Adw.PreferencesGroup folders_group {}
+
+          Gtk.Button {
+            label: _("Add folder…");
+            halign: center;
+            clicked => $_on_add_folder();
+          }
+
+          Gtk.Box {
+            orientation: horizontal;
+            spacing: 12;
+            halign: center;
+            margin-top: 12;
+
+            Gtk.Button {
+              label: _("Skip for now");
+              clicked => $_on_finish();
+            }
+
+            Gtk.Button {
+              label: _("Finish setup");
+              clicked => $_on_finish();
+              styles ["suggested-action", "pill"]
+            }
+          }
+        };
+      };
+    };
+  };
+}

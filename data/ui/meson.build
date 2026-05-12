@@ -5,6 +5,10 @@ blueprint_sources = files(
   'thumbnail-tile.blp',
   'preferences.blp',
   'gallery.blp',
+  'setup-welcome.blp',
+  'setup-server.blp',
+  'setup-login.blp',
+  'setup-dirs.blp',
 )
 
 blueprints = custom_target('blueprints',

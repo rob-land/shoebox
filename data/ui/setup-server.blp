@@ -1,0 +1,63 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $ShoeboxSetupServer: Adw.NavigationPage {
+  title: _("Server");
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      title-widget: Adw.WindowTitle {
+        title: _("Server");
+        subtitle: "";
+      };
+    }
+
+    content: Gtk.ScrolledWindow {
+      hexpand: true;
+      vexpand: true;
+
+      child: Adw.Clamp {
+        maximum-size: 520;
+        tightening-threshold: 400;
+
+        child: Gtk.Box {
+          orientation: vertical;
+          spacing: 18;
+          margin-top: 24;
+          margin-bottom: 24;
+          margin-start: 18;
+          margin-end: 18;
+
+          Gtk.Label heading {
+            label: _("Enter your server");
+            wrap: true;
+            styles ["title-2"]
+          }
+
+          Adw.PreferencesGroup {
+            Adw.EntryRow url_row {
+              title: _("Server URL");
+              input-purpose: url;
+              entry-activated => $_on_continue();
+            }
+          }
+
+          Gtk.Label error_label {
+            visible: false;
+            label: "";
+            wrap: true;
+            styles ["error"]
+          }
+
+          Gtk.Button {
+            label: _("Continue");
+            halign: center;
+            clicked => $_on_continue();
+            styles ["suggested-action", "pill"]
+          }
+        };
+      };
+    };
+  };
+}
