@@ -1,0 +1,109 @@
+using Gtk 4.0;
+using Adw 1;
+
+menu primary_menu {
+  item {
+    label: _("Preferences");
+    action: "app.preferences";
+  }
+  item {
+    label: _("About Shoebox");
+    action: "app.about";
+  }
+  item {
+    label: _("Quit");
+    action: "app.quit";
+  }
+}
+
+template $ShoeboxGalleryPage: Adw.NavigationPage {
+  title: _("Photos");
+  can-pop: false;
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      title-widget: Gtk.Box {
+        orientation: vertical;
+        spacing: 0;
+
+        Gtk.Label {
+          label: _("Photos");
+          styles ["title-3"]
+        }
+
+        Gtk.Label status_label {
+          label: "";
+          styles ["caption", "dim-label"]
+        }
+      };
+
+      [start]
+      Gtk.Button sync_button {
+        icon-name: "view-refresh-symbolic";
+        tooltip-text: _("Sync now");
+        clicked => $_on_sync_clicked();
+      }
+
+      [end]
+      Gtk.MenuButton {
+        icon-name: "open-menu-symbolic";
+        menu-model: primary_menu;
+      }
+    }
+
+    content: Gtk.Stack stack {
+      Gtk.StackPage {
+        name: "empty";
+
+        child: Adw.StatusPage {
+          icon-name: "image-x-generic-symbolic";
+          title: _("No photos yet");
+          description: _("Tap the refresh button to fetch your library. Local folders selected during setup will appear here too.");
+
+          child: Gtk.Button {
+            label: _("Sync now");
+            halign: center;
+            clicked => $_on_sync_clicked();
+            styles ["suggested-action", "pill"]
+          };
+        };
+      }
+
+      Gtk.StackPage {
+        name: "timeline";
+
+        child: Gtk.ScrolledWindow scroller {
+          hexpand: true;
+          vexpand: true;
+
+          child: Gtk.Box {
+            orientation: vertical;
+            spacing: 0;
+
+            Gtk.Box sections_box {
+              orientation: vertical;
+              spacing: 18;
+            }
+
+            Gtk.Box bottom_indicator {
+              visible: false;
+              orientation: horizontal;
+              spacing: 8;
+              halign: center;
+              margin-top: 12;
+              margin-bottom: 12;
+
+              Adw.Spinner {}
+
+              Gtk.Label {
+                label: _("Loading more…");
+                styles ["dim-label"]
+              }
+            }
+          };
+        };
+      }
+    };
+  };
+}

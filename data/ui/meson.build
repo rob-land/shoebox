@@ -4,6 +4,7 @@ blueprint_sources = files(
   'detail.blp',
   'thumbnail-tile.blp',
   'preferences.blp',
+  'gallery.blp',
 )
 
 blueprints = custom_target('blueprints',

@@ -15,7 +15,7 @@ from gi.repository import Adw, Gio, GLib, Gtk
 
 from ..backends import Backend
 from ..database import Asset
-from .widgets import Adw_spinner_or_fallback, AssetItem, ThumbnailTile
+from .widgets import AssetItem, ThumbnailTile
 
 if TYPE_CHECKING:
     from ..window import ShoeboxWindow
@@ -88,13 +88,19 @@ class _Section:
 # ----- the page itself --------------------------------------------------------
 
 
+@Gtk.Template(resource_path='/land/rob/shoebox/ui/gallery.ui')
 class GalleryPage(Adw.NavigationPage):
     __gtype_name__ = 'ShoeboxGalleryPage'
 
+    status_label:     Gtk.Label         = Gtk.Template.Child()
+    stack:            Gtk.Stack         = Gtk.Template.Child()
+    scroller:         Gtk.ScrolledWindow = Gtk.Template.Child()
+    sections_box:     Gtk.Box           = Gtk.Template.Child()
+    bottom_indicator: Gtk.Box           = Gtk.Template.Child()
+
     def __init__(self, window: 'ShoeboxWindow'):
-        super().__init__(title='Photos')
+        super().__init__()
         self.window = window
-        self.set_can_pop(False)
 
         self._sections: dict[str, _Section] = {}
         self._db_offset: int = 0
@@ -104,32 +110,13 @@ class GalleryPage(Adw.NavigationPage):
         self._loading_more: bool = False
         self._sync_manager = None
 
-        toolbar = Adw.ToolbarView()
-        self.set_child(toolbar)
+        self.stack.set_visible_child_name('empty')
 
-        header = Adw.HeaderBar()
-        toolbar.add_top_bar(header)
-        header.set_title_widget(self._build_title_widget())
-
-        sync_btn = Gtk.Button.new_from_icon_name('view-refresh-symbolic')
-        sync_btn.set_tooltip_text('Sync now')
-        sync_btn.connect('clicked', lambda *_: self.request_sync())
-        header.pack_start(sync_btn)
-
-        menu_btn = Gtk.MenuButton()
-        menu_btn.set_icon_name('open-menu-symbolic')
-        menu = Gio.Menu()
-        menu.append('Preferences', 'app.preferences')
-        menu.append('About Shoebox', 'app.about')
-        menu.append('Quit', 'app.quit')
-        menu_btn.set_menu_model(menu)
-        header.pack_end(menu_btn)
-
-        self._stack = Gtk.Stack()
-        toolbar.set_content(self._stack)
-        self._stack.add_named(self._build_empty_state(), 'empty')
-        self._stack.add_named(self._build_timeline(), 'timeline')
-        self._stack.set_visible_child_name('empty')
+        self.scroller.connect('edge-reached', self._on_edge_reached)
+        # Prefetch slightly before the very bottom for smoother scrolling.
+        self.scroller.get_vadjustment().connect(
+            'value-changed', self._on_vadjustment_changed,
+        )
 
         self.window.connect('notify::compact', lambda *_: self._sync_columns())
 
@@ -137,68 +124,12 @@ class GalleryPage(Adw.NavigationPage):
 
     # ----- title / status -----
 
-    def _build_title_widget(self) -> Gtk.Widget:
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        title = Gtk.Label(label='Photos')
-        title.add_css_class('title-3')
-        box.append(title)
-        self._status_label = Gtk.Label(label='')
-        self._status_label.add_css_class('caption')
-        self._status_label.add_css_class('dim-label')
-        box.append(self._status_label)
-        return box
-
     def _set_status(self, text: str) -> None:
-        self._status_label.set_text(text)
+        self.status_label.set_text(text)
 
-    # ----- timeline construction -----
-
-    def _build_timeline(self) -> Gtk.Widget:
-        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-
-        self._sections_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=18)
-        outer.append(self._sections_box)
-
-        self._bottom_indicator = Gtk.Box(
-            orientation=Gtk.Orientation.HORIZONTAL, spacing=8,
-        )
-        self._bottom_indicator.set_halign(Gtk.Align.CENTER)
-        self._bottom_indicator.set_margin_top(12)
-        self._bottom_indicator.set_margin_bottom(12)
-        self._bottom_spinner = Adw_spinner_or_fallback()
-        self._bottom_label = Gtk.Label(label='Loading more…')
-        self._bottom_label.add_css_class('dim-label')
-        self._bottom_indicator.append(self._bottom_spinner)
-        self._bottom_indicator.append(self._bottom_label)
-        self._bottom_indicator.set_visible(False)
-        outer.append(self._bottom_indicator)
-
-        self._scrolled = Gtk.ScrolledWindow()
-        self._scrolled.set_hexpand(True)
-        self._scrolled.set_vexpand(True)
-        self._scrolled.set_child(outer)
-        self._scrolled.connect('edge-reached', self._on_edge_reached)
-        # Prefetch slightly before the very bottom for smoother scrolling.
-        self._scrolled.get_vadjustment().connect(
-            'value-changed', self._on_vadjustment_changed,
-        )
-        return self._scrolled
-
-    def _build_empty_state(self) -> Gtk.Widget:
-        page = Adw.StatusPage()
-        page.set_icon_name('image-x-generic-symbolic')
-        page.set_title('No photos yet')
-        page.set_description(
-            'Tap the refresh button to fetch your library. '
-            'Local folders selected during setup will appear here too.'
-        )
-        btn = Gtk.Button(label='Sync now')
-        btn.add_css_class('suggested-action')
-        btn.add_css_class('pill')
-        btn.set_halign(Gtk.Align.CENTER)
-        btn.connect('clicked', lambda *_: self.request_sync())
-        page.set_child(btn)
-        return page
+    @Gtk.Template.Callback()
+    def _on_sync_clicked(self, *_args) -> None:
+        self.request_sync()
 
     # ----- thumbnail factory (shared across sections) -----
 
@@ -275,10 +206,10 @@ class GalleryPage(Adw.NavigationPage):
 
         # Tear down existing sections.
         self._sections.clear()
-        child = self._sections_box.get_first_child()
+        child = self.sections_box.get_first_child()
         while child is not None:
             nxt = child.get_next_sibling()
-            self._sections_box.remove(child)
+            self.sections_box.remove(child)
             child = nxt
 
         # Reset cursors.
@@ -295,9 +226,9 @@ class GalleryPage(Adw.NavigationPage):
             self._db_offset = len(assets)
             if len(assets) < _DB_BATCH:
                 self._has_more_in_db = False
-            self._stack.set_visible_child_name('timeline')
+            self.stack.set_visible_child_name('timeline')
         else:
-            self._stack.set_visible_child_name('empty')
+            self.stack.set_visible_child_name('empty')
 
         self._update_status()
 
@@ -334,16 +265,16 @@ class GalleryPage(Adw.NavigationPage):
         section = _Section(self, key, title)
         self._sections[key] = section
 
-        # Insert into _sections_box in date-descending order.
+        # Insert into sections_box in date-descending order.
         # 'Undated' (key '0000-00') sorts to the end naturally.
         keys_sorted = sorted(self._sections.keys(), reverse=True)
         idx = keys_sorted.index(key)
         if idx == 0:
-            self._sections_box.prepend(section.container)
+            self.sections_box.prepend(section.container)
         else:
             prev_key = keys_sorted[idx - 1]
             prev_section = self._sections[prev_key]
-            self._sections_box.insert_child_after(
+            self.sections_box.insert_child_after(
                 section.container, prev_section.container,
             )
         return section
@@ -366,10 +297,10 @@ class GalleryPage(Adw.NavigationPage):
         if self._loading_more:
             return
         if not self._has_more_in_db and not self._has_more_on_server:
-            self._show_bottom_indicator(False)
+            self.bottom_indicator.set_visible(False)
             return
         self._loading_more = True
-        self._show_bottom_indicator(True)
+        self.bottom_indicator.set_visible(True)
         # Defer to next idle so the scrolled-window finishes its pass first.
         GLib.idle_add(self._load_more_step)
 
@@ -377,7 +308,7 @@ class GalleryPage(Adw.NavigationPage):
         account = self.window.app.primary_account()
         if account is None:
             self._loading_more = False
-            self._show_bottom_indicator(False)
+            self.bottom_indicator.set_visible(False)
             return False
 
         if self._has_more_in_db:
@@ -390,20 +321,20 @@ class GalleryPage(Adw.NavigationPage):
                 if len(new_assets) < _DB_BATCH:
                     self._has_more_in_db = False
                 self._loading_more = False
-                self._show_bottom_indicator(False)
+                self.bottom_indicator.set_visible(False)
                 self._update_status()
                 return False
             self._has_more_in_db = False
 
         if not self._has_more_on_server:
             self._loading_more = False
-            self._show_bottom_indicator(False)
+            self.bottom_indicator.set_visible(False)
             return False
 
         sm = self._sync()
         if sm is None:
             self._loading_more = False
-            self._show_bottom_indicator(False)
+            self.bottom_indicator.set_visible(False)
             return False
 
         sm.fetch_more_remote(
@@ -424,15 +355,8 @@ class GalleryPage(Adw.NavigationPage):
             # Pull the just-stored rows into the timeline.
             self._maybe_load_more()
         else:
-            self._show_bottom_indicator(False)
+            self.bottom_indicator.set_visible(False)
             self._update_status()
-
-    def _show_bottom_indicator(self, on: bool) -> None:
-        self._bottom_indicator.set_visible(on)
-        if on and hasattr(self._bottom_spinner, 'start'):
-            self._bottom_spinner.start()
-        elif not on and hasattr(self._bottom_spinner, 'stop'):
-            self._bottom_spinner.stop()
 
     # ----- detail navigation -----
 
