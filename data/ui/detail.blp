@@ -1,0 +1,28 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $ShoeboxDetailPage: Adw.NavigationPage {
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      [end]
+      Gtk.Image local_badge {
+        visible: false;
+        icon-name: "folder-symbolic";
+      }
+    }
+
+    content: Gtk.Overlay {
+      child: Gtk.Picture picture {
+        can-shrink: true;
+        content-fit: contain;
+      };
+
+      [overlay]
+      Adw.Spinner spinner {
+        halign: center;
+        valign: center;
+      }
+    };
+  };
+}

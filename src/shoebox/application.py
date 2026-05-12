@@ -32,7 +32,7 @@ class ShoeboxApplication(Adw.Application):
 
         css = Gtk.CssProvider()
         try:
-            css.load_from_resource('/land/rob/shoebox/style.css')
+            css.load_from_resource('/land/rob/shoebox/ui/style.css')
             display = Gdk.Display.get_default()
             if display is not None:
                 Gtk.StyleContext.add_provider_for_display(

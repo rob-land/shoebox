@@ -20,19 +20,12 @@ install_data(
   install_dir: datadir / 'glib-2.0' / 'schemas',
 )
 
-gnome.compile_resources(
-  meson.project_name(),
-  'shoebox.gresource.xml',
-  gresource_bundle: true,
-  source_dir: meson.current_source_dir(),
-  install: true,
-  install_dir: pkgdatadir,
-)
-
 install_data(
   'icons/hicolor/scalable/apps' / application_id + '.svg',
   install_dir: datadir / 'icons/hicolor/scalable/apps',
 )
+
+subdir('ui')
 
 # Validators (optional; only run if tools are available).
 desktop_validate = find_program('desktop-file-validate', required: false)

@@ -16,7 +16,7 @@ gettext.install('shoebox', localedir)
 if __name__ == '__main__':
     import gi
     from gi.repository import Gio
-    resource = Gio.Resource.load(os.path.join(pkgdatadir, 'shoebox.gresource'))
+    resource = Gio.Resource.load(os.path.join(pkgdatadir, 'land.rob.shoebox.gresource'))
     resource._register()
 
     from shoebox import main

@@ -9,43 +9,27 @@ from gi.repository import Adw, Gdk, GLib, Gtk
 
 from ..database import Asset
 from ..worker import run_async
-from .widgets import Adw_spinner_or_fallback
 
 if TYPE_CHECKING:
     from ..window import ShoeboxWindow
 
 
+@Gtk.Template(resource_path='/land/rob/shoebox/ui/detail.ui')
 class DetailPage(Adw.NavigationPage):
     __gtype_name__ = 'ShoeboxDetailPage'
+
+    local_badge: Gtk.Image   = Gtk.Template.Child()
+    picture:     Gtk.Picture = Gtk.Template.Child()
+    spinner:     Adw.Spinner = Gtk.Template.Child()
 
     def __init__(self, window: 'ShoeboxWindow', asset: Asset):
         super().__init__(title=asset.filename or 'Photo')
         self.window = window
         self.asset = asset
 
-        toolbar = Adw.ToolbarView()
-        self.set_child(toolbar)
-
-        header = Adw.HeaderBar()
-        toolbar.add_top_bar(header)
-
         if asset.local_path:
-            badge = Gtk.Image.new_from_icon_name('folder-symbolic')
-            badge.set_tooltip_text(f'Local copy: {asset.local_path}')
-            header.pack_end(badge)
-
-        overlay = Gtk.Overlay()
-        toolbar.set_content(overlay)
-
-        self._picture = Gtk.Picture()
-        self._picture.set_can_shrink(True)
-        self._picture.set_content_fit(Gtk.ContentFit.CONTAIN)
-        overlay.set_child(self._picture)
-
-        self._spinner = Adw_spinner_or_fallback()
-        self._spinner.set_halign(Gtk.Align.CENTER)
-        self._spinner.set_valign(Gtk.Align.CENTER)
-        overlay.add_overlay(self._spinner)
+            self.local_badge.set_tooltip_text(f'Local copy: {asset.local_path}')
+            self.local_badge.set_visible(True)
 
         self.connect('shown', lambda *_: self._load())
 
@@ -55,7 +39,7 @@ class DetailPage(Adw.NavigationPage):
         elif self.asset.remote_id:
             self._load_remote()
         else:
-            self._spinner.set_visible(False)
+            self.spinner.set_visible(False)
 
     def _load_local(self) -> None:
         path = self.asset.local_path
@@ -72,7 +56,7 @@ class DetailPage(Adw.NavigationPage):
     def _load_remote(self) -> None:
         backend = self.window.app.primary_backend()
         if backend is None:
-            self._spinner.set_visible(False)
+            self.spinner.set_visible(False)
             return
         remote_id = self.asset.remote_id
 
@@ -86,12 +70,12 @@ class DetailPage(Adw.NavigationPage):
                   on_error=lambda _e: self._set_bytes(None))
 
     def _set_bytes(self, data: Optional[bytes]) -> None:
-        self._spinner.set_visible(False)
+        self.spinner.set_visible(False)
         if not data:
             self.window.toast('Failed to load image')
             return
         try:
             texture = Gdk.Texture.new_from_bytes(GLib.Bytes.new(data))
-            self._picture.set_paintable(texture)
+            self.picture.set_paintable(texture)
         except GLib.Error:
             self.window.toast('Unsupported image format')

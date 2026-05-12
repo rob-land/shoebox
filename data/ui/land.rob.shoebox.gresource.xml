@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/land/rob/shoebox">
+    <file alias="ui/style.css">style.css</file>
+    <file preprocess="xml-stripblanks" alias="ui/detail.ui">detail.ui</file>
+  </gresource>
+</gresources>
