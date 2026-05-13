@@ -31,9 +31,11 @@ is the single declaration site.
 ## Tech stack
 
 - **Language**: Python 3.10+
-- **UI toolkit**: GTK4 + libadwaita (PyGObject), `.ui` XML templates
-  bundled via GResource (the `.blp` migration that the rest of the
-  collection has done is still pending here)
+- **UI toolkit**: GTK4 + libadwaita (PyGObject); UI authored in
+  Blueprint (`.blp`) under `data/ui/`, compiled to `.ui` at build
+  time and bundled via GResource. Python widgets are thin
+  `@Gtk.Template`-decorated wrappers around the templates; dynamic
+  per-item content (gallery tiles, folder rows) stays programmatic.
 - **Build system**: Meson + Ninja
 - **Packaging**: Flatpak (manifest:
   `build-aux/flatpak/land.rob.shoebox.json`), GNOME 50 SDK
@@ -51,8 +53,11 @@ build-aux/flatpak/
   land.rob.shoebox.json        Flatpak manifest
 data/
   land.rob.shoebox.{desktop,metainfo.xml,gschema.xml}.in*
-  shoebox.gresource.xml
-  ui/                          Gtk.Builder XML templates
+  ui/
+    meson.build                blueprint-compiler + gnome.compile_resources
+    land.rob.shoebox.gresource.xml
+    style.css
+    *.blp                      Blueprint UI templates
   icons/
 po/
   LINGUAS, POTFILES.in, meson.build (no translations yet)
@@ -64,7 +69,7 @@ src/
     database.py, secrets.py, settings.py, worker.py
     backends/                  base + Immich
     sync/                      manager, scanner, conditions
-    ui/                        Python-side view modules
+    ui/                        @Gtk.Template wrappers for the .blp templates
 tests/
   meson.build, test_smoke.py   pytest target wired into `meson test`
 ```
