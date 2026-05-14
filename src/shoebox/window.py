@@ -95,4 +95,11 @@ class ShoeboxWindow(Adw.ApplicationWindow):
         s.set_int('window-width', width)
         s.set_int('window-height', height)
         s.set_boolean('window-maximized', self.is_maximized())
+        # If the user has opted into close-to-background, hide and
+        # hold so the periodic sync timer keeps running. Otherwise
+        # let the default close-and-quit happen.
+        if s.get_boolean('run-in-background') and self.app.primary_account() is not None:
+            self.set_visible(False)
+            self.app.hold_for_background()
+            return True
         return False

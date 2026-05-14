@@ -46,6 +46,20 @@ template $ShoeboxPreferencesDialog: Adw.PreferencesDialog {
       }
     }
 
+    Adw.PreferencesGroup {
+      title: _("Background");
+
+      Adw.SwitchRow background_switch {
+        title: _("Run in background");
+        subtitle: _("Closing the window keeps syncing on a timer");
+      }
+
+      Adw.SwitchRow autostart_switch {
+        title: _("Run at startup");
+        subtitle: _("Start syncing automatically when you log in");
+      }
+    }
+
     Adw.PreferencesGroup folders_group {
       title: _("Folders");
       description: _("Photos in these folders will be uploaded.");

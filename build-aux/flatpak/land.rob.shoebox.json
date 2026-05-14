@@ -16,7 +16,8 @@
     "--talk-name=org.freedesktop.secrets",
     "--system-talk-name=org.freedesktop.NetworkManager",
     "--system-talk-name=org.freedesktop.UPower",
-    "--talk-name=org.freedesktop.Notifications"
+    "--talk-name=org.freedesktop.Notifications",
+    "--filesystem=xdg-config/autostart:create"
   ],
   "cleanup": [
     "/include",

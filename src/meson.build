@@ -11,6 +11,7 @@ shoebox_sources = [
   'shoebox/__init__.py',
   'shoebox/main.py',
   'shoebox/application.py',
+  'shoebox/background_portal.py',
   'shoebox/window.py',
   'shoebox/database.py',
   'shoebox/secrets.py',

@@ -7,7 +7,10 @@ from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gio, GLib, Gtk
 
-from .. import secrets
+from .. import background_portal, secrets
+
+_APP_ID = 'land.rob.shoebox'
+_APP_NAME = 'Shoebox'
 
 if TYPE_CHECKING:
     from ..application import ShoeboxApplication
@@ -24,13 +27,15 @@ _NETWORK_PREFS = [
 class PreferencesDialog(Adw.PreferencesDialog):
     __gtype_name__ = 'ShoeboxPreferencesDialog'
 
-    account_row:      Adw.ActionRow  = Gtk.Template.Child()
-    sign_out_button:  Gtk.Button     = Gtk.Template.Child()
-    auto_row:         Adw.SwitchRow  = Gtk.Template.Child()
-    network_row:      Adw.ComboRow   = Gtk.Template.Child()
-    charging_row:     Adw.SwitchRow  = Gtk.Template.Child()
-    folders_group:    Adw.PreferencesGroup = Gtk.Template.Child()
-    add_folder_row:   Adw.ButtonRow  = Gtk.Template.Child()
+    account_row:       Adw.ActionRow  = Gtk.Template.Child()
+    sign_out_button:   Gtk.Button     = Gtk.Template.Child()
+    auto_row:          Adw.SwitchRow  = Gtk.Template.Child()
+    network_row:       Adw.ComboRow   = Gtk.Template.Child()
+    charging_row:      Adw.SwitchRow  = Gtk.Template.Child()
+    background_switch: Adw.SwitchRow  = Gtk.Template.Child()
+    autostart_switch:  Adw.SwitchRow  = Gtk.Template.Child()
+    folders_group:     Adw.PreferencesGroup = Gtk.Template.Child()
+    add_folder_row:    Adw.ButtonRow  = Gtk.Template.Child()
 
     def __init__(self, app: 'ShoeboxApplication'):
         super().__init__()
@@ -39,6 +44,7 @@ class PreferencesDialog(Adw.PreferencesDialog):
 
         self._populate_account()
         self._bind_sync_settings()
+        self._bind_background_settings()
         self._reload_folders()
 
     # ----- account -----
@@ -85,6 +91,33 @@ class PreferencesDialog(Adw.PreferencesDialog):
         idx = row.get_selected()
         if 0 <= idx < len(_NETWORK_PREFS):
             self.app.settings.set_string('sync-network', _NETWORK_PREFS[idx][0])
+
+    # ----- background settings -----
+
+    def _bind_background_settings(self) -> None:
+        s = self.app.settings
+        s.bind('run-in-background', self.background_switch, 'active',
+               Gio.SettingsBindFlags.DEFAULT)
+        # Autostart isn't a plain bind because flipping it has a
+        # side-effect (write/remove ~/.config/autostart/<id>.desktop).
+        self.autostart_switch.set_active(s.get_boolean('autostart-enabled'))
+        self.autostart_switch.connect('notify::active', self._on_autostart_toggled)
+
+    def _on_autostart_toggled(self, sw: Adw.SwitchRow, _pspec) -> None:
+        enabled = sw.get_active()
+        self.app.settings.set_boolean('autostart-enabled', enabled)
+
+        def on_response(code: int) -> None:
+            if code == 0:
+                return
+            sw.handler_block_by_func(self._on_autostart_toggled)
+            sw.set_active(not enabled)
+            sw.handler_unblock_by_func(self._on_autostart_toggled)
+            self.app.settings.set_boolean('autostart-enabled', not enabled)
+
+        background_portal.request_background(
+            autostart=enabled, app_id=_APP_ID, app_name=_APP_NAME,
+            on_response=on_response)
 
     # ----- folder management -----
 

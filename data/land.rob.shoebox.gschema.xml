@@ -45,6 +45,17 @@
       <summary>Sync automatically in the background</summary>
     </key>
 
+    <key name="run-in-background" type="b">
+      <default>false</default>
+      <summary>Keep the process running after the window closes</summary>
+    </key>
+
+    <key name="autostart-enabled" type="b">
+      <default>false</default>
+      <summary>Register a host autostart entry for `shoebox --background`</summary>
+      <description>When enabled, writes ~/.config/autostart/land.rob.shoebox.desktop so the user's session brings up the background sync loop at login. Periodic sync still honors the network / charging conditions configured below.</description>
+    </key>
+
     <key name="thumbnail-size" type="i">
       <default>256</default>
       <range min="128" max="512"/>
