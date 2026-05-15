@@ -152,6 +152,9 @@ class ShoeboxApplication(Adw.Application):
 
         self.set_accels_for_action('app.quit', ['<Primary>q'])
         self.set_accels_for_action('app.preferences', ['<Primary>comma'])
+        # Sync-now has a Sync button in the gallery header; bind a key
+        # too so it's reachable without aiming the cursor.
+        self.set_accels_for_action('app.sync-now', ['<Primary>r', 'F5'])
 
     def _show_about(self) -> None:
         about = Adw.AboutDialog(
