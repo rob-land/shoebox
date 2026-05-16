@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import threading
 import time
+from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
@@ -18,6 +20,30 @@ if TYPE_CHECKING:
 
 
 log = logging.getLogger(__name__)
+
+# Recently-used decoded textures, keyed by (asset_id, size). When a tile
+# rebinds and the bytes are already in memory we skip disk + decode and
+# paint instantly — fixes the "spinner flash on every scroll" problem.
+# 200 entries × ~256 KB decoded each ≈ 50 MB upper bound.
+_TEXTURE_CACHE_LIMIT = 200
+_texture_cache: 'OrderedDict[tuple[int, int], Gdk.Texture]' = OrderedDict()
+_texture_cache_lock = threading.Lock()
+
+
+def _texture_cache_get(key: tuple[int, int]) -> Optional[Gdk.Texture]:
+    with _texture_cache_lock:
+        tex = _texture_cache.get(key)
+        if tex is not None:
+            _texture_cache.move_to_end(key)
+        return tex
+
+
+def _texture_cache_put(key: tuple[int, int], texture: Gdk.Texture) -> None:
+    with _texture_cache_lock:
+        _texture_cache[key] = texture
+        _texture_cache.move_to_end(key)
+        while len(_texture_cache) > _TEXTURE_CACHE_LIMIT:
+            _texture_cache.popitem(last=False)
 
 
 # ---- model item --------------------------------------------------------------
@@ -195,11 +221,21 @@ class ThumbnailTile(Gtk.Overlay):
     ) -> None:
         self._asset = asset
         self._size = size
-        self.picture.set_paintable(None)
         self.badge.set_visible(asset.is_local_only)
         self.favorite_badge.set_visible(asset.is_favorite)
-        self.spinner.set_visible(True)
         self.set_selected(selected, show_check=show_check)
+
+        # Fast path: decoded texture in memory cache → paint immediately,
+        # no spinner, no work.
+        cache_key = (asset.id, size)
+        cached = _texture_cache_get(cache_key)
+        if cached is not None:
+            self.picture.set_paintable(cached)
+            self.spinner.set_visible(False)
+            return
+
+        self.picture.set_paintable(None)
+        self.spinner.set_visible(True)
 
         def done(data: Optional[bytes]) -> None:
             if self._asset is not asset:
@@ -209,9 +245,10 @@ class ThumbnailTile(Gtk.Overlay):
                 return
             try:
                 texture = Gdk.Texture.new_from_bytes(GLib.Bytes.new(data))
-                self.picture.set_paintable(texture)
             except GLib.Error:
-                pass
+                return
+            _texture_cache_put(cache_key, texture)
+            self.picture.set_paintable(texture)
 
         _submit_thumbnail(asset, size, backend, done)
 

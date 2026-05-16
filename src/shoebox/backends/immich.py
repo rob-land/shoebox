@@ -238,7 +238,11 @@ class ImmichBackend(Backend):
     # ---------- bytes ----------
 
     def fetch_thumbnail(self, remote_id: str, size: int) -> bytes:
-        kind = 'preview' if size > 250 else 'thumbnail'
+        # Immich serves two pre-rendered sizes: 'thumbnail' (~256 px) and
+        # 'preview' (~1440 px). The latter is roughly 6x the bytes for
+        # marginal visual gain on tiles, so only escalate when the user
+        # has cranked the thumbnail-size pref above ~2x the small render.
+        kind = 'preview' if size > 320 else 'thumbnail'
         return self._request(
             'GET',
             f'/api/assets/{remote_id}/thumbnail',
