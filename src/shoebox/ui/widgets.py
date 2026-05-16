@@ -3,16 +3,21 @@
 from __future__ import annotations
 
 import hashlib
+import logging
+import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 from gi.repository import Adw, Gdk, GdkPixbuf, GLib, GObject, Gio, Gtk
 
 from ..database import Asset
-from ..worker import run_async
 
 if TYPE_CHECKING:
     from ..backends import Backend
+
+
+log = logging.getLogger(__name__)
 
 
 # ---- model item --------------------------------------------------------------
@@ -63,14 +68,24 @@ def _load_thumbnail_bytes(
             ok, raw = pixbuf.save_to_bufferv('jpeg', ['quality'], ['82'])
             if ok:
                 data = bytes(raw)
-        except GLib.Error:
-            data = None
+        except GLib.Error as e:
+            log.debug('local thumbnail decode failed for %s: %s',
+                      asset.local_path, e)
 
     if data is None and asset.remote_id and backend is not None:
-        try:
-            data = backend.fetch_thumbnail(asset.remote_id, size)
-        except Exception:  # noqa: BLE001
-            data = None
+        # libsoup3 sessions are nominally thread-safe but get jittery
+        # under bursty concurrent loads — one retry mops up the
+        # transient failures that produced the empty-tile bug.
+        for attempt in range(2):
+            try:
+                data = backend.fetch_thumbnail(asset.remote_id, size)
+                break
+            except Exception as e:  # noqa: BLE001
+                if attempt == 0:
+                    time.sleep(0.05)
+                    continue
+                log.debug('remote thumbnail %s failed: %s',
+                          asset.remote_id, e)
 
     if data:
         try:
@@ -78,6 +93,46 @@ def _load_thumbnail_bytes(
         except OSError:
             pass
     return data
+
+
+# A small dedicated pool keeps libsoup happy: each visible scroll page
+# can spawn dozens of binds at once, and an unbounded thread-per-bind
+# strategy raced the shared Soup.Session and dropped 1/3 to 1/2 of
+# requests. Six is enough to saturate any reasonable Immich and small
+# enough that nothing trips over itself.
+_thumb_pool: Optional[ThreadPoolExecutor] = None
+
+
+def _get_thumb_pool() -> ThreadPoolExecutor:
+    global _thumb_pool
+    if _thumb_pool is None:
+        _thumb_pool = ThreadPoolExecutor(
+            max_workers=6, thread_name_prefix='shoebox-thumb',
+        )
+    return _thumb_pool
+
+
+def _submit_thumbnail(
+    asset: Asset, size: int, backend: Optional['Backend'],
+    on_done,
+) -> None:
+    def worker() -> None:
+        try:
+            data = _load_thumbnail_bytes(asset, size, backend)
+        except Exception:  # noqa: BLE001 — must always reach on_done
+            log.exception('thumbnail worker crashed')
+            data = None
+        GLib.idle_add(_safely_call, on_done, data)
+
+    _get_thumb_pool().submit(worker)
+
+
+def _safely_call(cb, arg) -> bool:
+    try:
+        cb(arg)
+    except Exception:  # noqa: BLE001
+        log.exception('thumbnail callback failed')
+    return False
 
 
 # ---- thumbnail widget --------------------------------------------------------
@@ -105,9 +160,6 @@ class ThumbnailTile(Gtk.Overlay):
         self.badge.set_visible(asset.is_local_only)
         self.spinner.set_visible(True)
 
-        def load() -> Optional[bytes]:
-            return _load_thumbnail_bytes(asset, size, backend)
-
         def done(data: Optional[bytes]) -> None:
             if self._asset is not asset:
                 return  # row was rebound to a different asset
@@ -120,7 +172,7 @@ class ThumbnailTile(Gtk.Overlay):
             except GLib.Error:
                 pass
 
-        run_async(load, on_done=done, on_error=lambda _e: done(None))
+        _submit_thumbnail(asset, size, backend, done)
 
 
 def Adw_spinner_or_fallback() -> Gtk.Widget:

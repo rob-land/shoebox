@@ -1,6 +1,6 @@
 """Adaptive sectioned timeline gallery.
 
-Photos are grouped into per-month sections sorted newest-first. The view
+Photos are grouped into per-day sections sorted newest-first. The view
 loads the latest batch from the catalog on entry; scrolling to the bottom
 pulls more rows from the catalog and, once exhausted, fetches the next
 page from the server in the background.
@@ -8,7 +8,7 @@ page from the server in the background.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import TYPE_CHECKING, Iterable, Optional
 
 from gi.repository import Adw, Gio, GLib, Gtk
@@ -23,21 +23,38 @@ if TYPE_CHECKING:
 
 _DB_BATCH = 200          # rows to read from the catalog per scroll fetch
 _SERVER_PAGE_SIZE = 200  # rows to fetch from the server per scroll fetch
-_UNDATED_KEY = '0000-00'
+_UNDATED_KEY = '0000-00-00'
 
 
-def _month_key(taken_at: Optional[int]) -> tuple[str, str]:
+def _day_key(taken_at: Optional[int]) -> tuple[str, str]:
+    """Return a (sort-key, display-title) pair for a photo's day section.
+
+    Undated photos sort to the very end via the _UNDATED_KEY sentinel.
+    """
     if taken_at is None or taken_at <= 0:
         return _UNDATED_KEY, 'Undated'
     dt = datetime.fromtimestamp(taken_at)
-    return dt.strftime('%Y-%m'), dt.strftime('%B %Y')
+    return dt.strftime('%Y-%m-%d'), _format_day(dt)
 
 
-# ----- per-month section ------------------------------------------------------
+def _format_day(dt: datetime) -> str:
+    today = date.today()
+    d = dt.date()
+    delta = (today - d).days
+    if delta == 0:
+        return 'Today'
+    if delta == 1:
+        return 'Yesterday'
+    if d.year == today.year:
+        return dt.strftime('%A, %-d %B')
+    return dt.strftime('%A, %-d %B %Y')
+
+
+# ----- per-day section --------------------------------------------------------
 
 
 class _Section:
-    """One month's worth of assets: header label + GridView."""
+    """One day's worth of assets: header label + GridView."""
 
     def __init__(
         self,
@@ -56,9 +73,9 @@ class _Section:
         self.container.set_margin_top(12)
 
         self.header = Gtk.Label(label=title)
-        self.header.add_css_class('title-3')
+        self.header.add_css_class('heading')
         self.header.set_halign(Gtk.Align.START)
-        self.header.set_margin_bottom(4)
+        self.header.set_margin_bottom(2)
         self.container.append(self.header)
 
         factory = Gtk.SignalListItemFactory()
@@ -250,7 +267,7 @@ class GalleryPage(Adw.NavigationPage):
         # Group by (key, title). Inputs are already sorted DESC by taken_at.
         grouped: dict[str, tuple[str, list[Asset]]] = {}
         for asset in assets:
-            key, title = _month_key(asset.taken_at)
+            key, title = _day_key(asset.taken_at)
             grouped.setdefault(key, (title, []))[1].append(asset)
 
         # Iterate in DESC order so insertions land in the right places.
