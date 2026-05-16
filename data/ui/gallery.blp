@@ -73,35 +73,46 @@ template $ShoeboxGalleryPage: Adw.NavigationPage {
       Gtk.StackPage {
         name: "timeline";
 
-        child: Gtk.ScrolledWindow scroller {
-          hexpand: true;
-          vexpand: true;
+        child: Gtk.Overlay {
+          child: Gtk.ScrolledWindow scroller {
+            hexpand: true;
+            vexpand: true;
 
-          child: Gtk.Box {
-            orientation: vertical;
-            spacing: 0;
-
-            Gtk.Box sections_box {
+            child: Gtk.Box {
               orientation: vertical;
-              spacing: 18;
-            }
+              spacing: 0;
 
-            Gtk.Box bottom_indicator {
-              visible: false;
-              orientation: horizontal;
-              spacing: 8;
-              halign: center;
-              margin-top: 12;
-              margin-bottom: 12;
-
-              Adw.Spinner {}
-
-              Gtk.Label {
-                label: _("Loading more…");
-                styles ["dim-label"]
+              Gtk.Box sections_box {
+                orientation: vertical;
+                spacing: 18;
               }
-            }
+
+              Gtk.Box bottom_indicator {
+                visible: false;
+                orientation: horizontal;
+                spacing: 8;
+                halign: center;
+                margin-top: 12;
+                margin-bottom: 12;
+
+                Adw.Spinner {}
+
+                Gtk.Label {
+                  label: _("Loading more…");
+                  styles ["dim-label"]
+                }
+              }
+            };
           };
+
+          [overlay]
+          Gtk.Label date_pill {
+            label: "";
+            halign: end;
+            valign: start;
+            can-target: false;
+            styles ["date-pill"]
+          }
         };
       }
     };

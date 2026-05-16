@@ -28,3 +28,22 @@
   color: white;
   padding: 6px;
 }
+
+/* Date scrubber pill: fades in next to the scrollbar while the user
+ * is scrolling through the timeline. Mirrors the Immich mobile pill
+ * but lives inside an Adw.Bin overlay rather than a custom thumb,
+ * so it composes with GTK's native scrollbar instead of replacing it. */
+.date-pill {
+  background-color: alpha(@accent_bg_color, 0.85);
+  color: @accent_fg_color;
+  border-radius: 9999px;
+  padding: 4px 12px;
+  font-weight: bold;
+  opacity: 0;
+  transition: opacity 200ms ease;
+  margin: 4px 24px 0 0;
+}
+
+.date-pill.visible {
+  opacity: 1;
+}

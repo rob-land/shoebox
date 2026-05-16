@@ -50,6 +50,24 @@ def _format_day(dt: datetime) -> str:
     return dt.strftime('%A, %-d %B %Y')
 
 
+def _scrubber_title(section_key: str, fallback: str) -> str:
+    """Coarser label for the scrubber pill — month, not day.
+
+    Keeps the pill from flickering through every day as the user
+    scrolls; jumping a single month is the right granularity for "where
+    am I in time."
+    """
+    if section_key == _UNDATED_KEY:
+        return 'Undated'
+    try:
+        dt = datetime.strptime(section_key, '%Y-%m-%d')
+    except ValueError:
+        return fallback
+    if dt.year == date.today().year:
+        return dt.strftime('%B')
+    return dt.strftime('%B %Y')
+
+
 # ----- per-day section --------------------------------------------------------
 
 
@@ -114,6 +132,7 @@ class GalleryPage(Adw.NavigationPage):
     scroller:         Gtk.ScrolledWindow = Gtk.Template.Child()
     sections_box:     Gtk.Box           = Gtk.Template.Child()
     bottom_indicator: Gtk.Box           = Gtk.Template.Child()
+    date_pill:        Gtk.Label         = Gtk.Template.Child()
 
     def __init__(self, window: 'ShoeboxWindow'):
         super().__init__()
@@ -126,6 +145,8 @@ class GalleryPage(Adw.NavigationPage):
         self._has_more_on_server: bool = True
         self._loading_more: bool = False
         self._sync_manager = None
+        self._pill_hide_id: Optional[int] = None
+        self._last_pill_text: str = ''
 
         self.stack.set_visible_child_name('empty')
 
@@ -309,6 +330,41 @@ class GalleryPage(Adw.NavigationPage):
         value = adj.get_value()
         if upper > 0 and (value + page * 2) >= upper:
             self._maybe_load_more()
+        self._update_date_pill(value)
+
+    # ----- date scrubber pill -----
+
+    def _update_date_pill(self, scroll_y: float) -> None:
+        title = self._title_at_scroll_y(scroll_y)
+        if not title:
+            return
+        if title != self._last_pill_text:
+            self.date_pill.set_label(title)
+            self._last_pill_text = title
+        self.date_pill.add_css_class('visible')
+        if self._pill_hide_id is not None:
+            GLib.source_remove(self._pill_hide_id)
+        self._pill_hide_id = GLib.timeout_add(
+            800, self._hide_date_pill,
+        )
+
+    def _hide_date_pill(self) -> bool:
+        self.date_pill.remove_css_class('visible')
+        self._pill_hide_id = None
+        return False
+
+    def _title_at_scroll_y(self, scroll_y: float) -> str:
+        """Return the month-and-year of the topmost visible section."""
+        # Sections are appended into sections_box in newest-first order, so
+        # walking that order and picking the first whose container bottom is
+        # past the scroll cursor gives us the section currently at the top of
+        # the viewport.
+        for key in sorted(self._sections.keys(), reverse=True):
+            section = self._sections[key]
+            alloc = section.container.get_allocation()
+            if alloc.y + alloc.height > scroll_y:
+                return _scrubber_title(key, section.title)
+        return ''
 
     def _maybe_load_more(self) -> None:
         if self._loading_more:
