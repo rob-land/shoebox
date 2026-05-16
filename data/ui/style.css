@@ -47,3 +47,18 @@
 .date-pill.visible {
   opacity: 1;
 }
+
+/* Selection checkmark overlaid on a thumbnail when in selection mode. */
+.select-check {
+  background-color: @accent_bg_color;
+  color: @accent_fg_color;
+  border-radius: 9999px;
+  padding: 3px;
+  min-width: 14px;
+  min-height: 14px;
+}
+
+.gallery-thumb.selected {
+  outline: 3px solid @accent_bg_color;
+  outline-offset: -3px;
+}

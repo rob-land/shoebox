@@ -90,11 +90,27 @@ class _Section:
         self.container.set_margin_end(12)
         self.container.set_margin_top(12)
 
+        header_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        header_row.set_margin_bottom(2)
+
         self.header = Gtk.Label(label=title)
         self.header.add_css_class('heading')
         self.header.set_halign(Gtk.Align.START)
-        self.header.set_margin_bottom(2)
-        self.container.append(self.header)
+        self.header.set_hexpand(True)
+        header_row.append(self.header)
+
+        self.select_all_button = Gtk.Button(
+            icon_name='checkbox-symbolic',
+            tooltip_text='Select all in this day',
+        )
+        self.select_all_button.add_css_class('flat')
+        self.select_all_button.set_visible(False)
+        self.select_all_button.connect(
+            'clicked', lambda *_: self._page._select_all_in_section(self),
+        )
+        header_row.append(self.select_all_button)
+
+        self.container.append(header_row)
 
         factory = Gtk.SignalListItemFactory()
         factory.connect('setup', page._factory_setup)
@@ -113,11 +129,17 @@ class _Section:
         for a in assets:
             self.store.append(AssetItem(a))
 
+    def set_selection_mode(self, on: bool) -> None:
+        self.select_all_button.set_visible(on)
+
     def _on_activate(self, _grid, position: int) -> None:
         item: AssetItem = self.store.get_item(position)
         if item is None:
             return
-        self._page._open_detail(item.asset)
+        if self._page._selection_mode:
+            self._page._toggle_selection(item.asset)
+        else:
+            self._page._open_detail(item.asset)
 
 
 # ----- the page itself --------------------------------------------------------
@@ -127,12 +149,16 @@ class _Section:
 class GalleryPage(Adw.NavigationPage):
     __gtype_name__ = 'ShoeboxGalleryPage'
 
-    status_label:     Gtk.Label         = Gtk.Template.Child()
-    stack:            Gtk.Stack         = Gtk.Template.Child()
-    scroller:         Gtk.ScrolledWindow = Gtk.Template.Child()
-    sections_box:     Gtk.Box           = Gtk.Template.Child()
-    bottom_indicator: Gtk.Box           = Gtk.Template.Child()
-    date_pill:        Gtk.Label         = Gtk.Template.Child()
+    status_label:         Gtk.Label         = Gtk.Template.Child()
+    stack:                Gtk.Stack         = Gtk.Template.Child()
+    scroller:             Gtk.ScrolledWindow = Gtk.Template.Child()
+    sections_box:         Gtk.Box           = Gtk.Template.Child()
+    bottom_indicator:     Gtk.Box           = Gtk.Template.Child()
+    date_pill:            Gtk.Label         = Gtk.Template.Child()
+    browse_header:        Adw.HeaderBar     = Gtk.Template.Child()
+    select_header:        Adw.HeaderBar     = Gtk.Template.Child()
+    count_label:          Gtk.Label         = Gtk.Template.Child()
+    adjust_dates_button:  Gtk.Button        = Gtk.Template.Child()
 
     def __init__(self, window: 'ShoeboxWindow'):
         super().__init__()
@@ -147,6 +173,8 @@ class GalleryPage(Adw.NavigationPage):
         self._sync_manager = None
         self._pill_hide_id: Optional[int] = None
         self._last_pill_text: str = ''
+        self._selection_mode: bool = False
+        self._selected_ids: set[int] = set()
 
         self.stack.set_visible_child_name('empty')
 
@@ -178,10 +206,101 @@ class GalleryPage(Adw.NavigationPage):
         item: AssetItem = list_item.get_item()
         tile: ThumbnailTile = list_item.get_child()
         size = self.window.app.settings.get_int('thumbnail-size')
-        tile.bind(item.asset, size, self._backend())
+        tile.bind(
+            item.asset, size, self._backend(),
+            selected=item.asset.id in self._selected_ids,
+            show_check=self._selection_mode,
+        )
 
     def _factory_unbind(self, _factory, list_item: Gtk.ListItem) -> None:
         pass
+
+    # ----- selection mode -----
+
+    @Gtk.Template.Callback()
+    def _on_select_mode_clicked(self, *_args) -> None:
+        self._set_selection_mode(True)
+
+    @Gtk.Template.Callback()
+    def _on_select_cancel(self, *_args) -> None:
+        self._set_selection_mode(False)
+
+    @Gtk.Template.Callback()
+    def _on_adjust_dates_clicked(self, *_args) -> None:
+        if not self._selected_ids:
+            return
+        from .bulk_date_dialog import BulkDateDialog
+        dialog = BulkDateDialog(
+            self.window,
+            self._selected_assets(),
+            on_done=self._on_bulk_done,
+        )
+        dialog.present(self.window)
+
+    def _set_selection_mode(self, on: bool) -> None:
+        self._selection_mode = on
+        self.browse_header.set_visible(not on)
+        self.select_header.set_visible(on)
+        if not on:
+            self._selected_ids.clear()
+        self._refresh_section_selection_buttons()
+        self._refresh_visible_tiles()
+        self._update_selection_count()
+
+    def _toggle_selection(self, asset: Asset) -> None:
+        if asset.id in self._selected_ids:
+            self._selected_ids.remove(asset.id)
+        else:
+            self._selected_ids.add(asset.id)
+        self._refresh_visible_tiles()
+        self._update_selection_count()
+
+    def _select_all_in_section(self, section: '_Section') -> None:
+        ids = {section.store.get_item(i).asset.id
+               for i in range(section.store.get_n_items())}
+        # Toggle: if every item is already selected, deselect them; else select.
+        if ids.issubset(self._selected_ids):
+            self._selected_ids -= ids
+        else:
+            self._selected_ids |= ids
+        self._refresh_visible_tiles()
+        self._update_selection_count()
+
+    def _selected_assets(self) -> list[Asset]:
+        out: list[Asset] = []
+        for section in self._sections.values():
+            for i in range(section.store.get_n_items()):
+                item = section.store.get_item(i)
+                if item.asset.id in self._selected_ids:
+                    out.append(item.asset)
+        return out
+
+    def _update_selection_count(self) -> None:
+        n = len(self._selected_ids)
+        if n == 0:
+            self.count_label.set_text('Select photos')
+        elif n == 1:
+            self.count_label.set_text('1 selected')
+        else:
+            self.count_label.set_text(f'{n} selected')
+        self.adjust_dates_button.set_sensitive(n > 0)
+
+    def _refresh_section_selection_buttons(self) -> None:
+        for section in self._sections.values():
+            section.set_selection_mode(self._selection_mode)
+
+    def _refresh_visible_tiles(self) -> None:
+        # Rebinding via items-changed forces the GridView factory to re-run
+        # bind on every visible row. Cheap: ListView only re-binds widgets
+        # actually attached to the viewport.
+        for section in self._sections.values():
+            n = section.store.get_n_items()
+            if n > 0:
+                section.store.items_changed(0, n, n)
+
+    def _on_bulk_done(self) -> None:
+        self._set_selection_mode(False)
+        self._refresh_from_db()
 
     # ----- column adaptation -----
 

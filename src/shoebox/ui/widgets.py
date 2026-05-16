@@ -144,21 +144,31 @@ class ThumbnailTile(Gtk.Overlay):
 
     __gtype_name__ = 'ShoeboxThumbnailTile'
 
-    picture: Gtk.Picture = Gtk.Template.Child()
-    badge:   Gtk.Image   = Gtk.Template.Child()
-    spinner: Adw.Spinner = Gtk.Template.Child()
+    picture:      Gtk.Picture = Gtk.Template.Child()
+    badge:        Gtk.Image   = Gtk.Template.Child()
+    spinner:      Adw.Spinner = Gtk.Template.Child()
+    select_check: Gtk.Image   = Gtk.Template.Child()
 
     def __init__(self):
         super().__init__()
         self._size = 256
         self._asset: Optional[Asset] = None
 
-    def bind(self, asset: Asset, size: int, backend: Optional['Backend']) -> None:
+    def bind(
+        self,
+        asset: Asset,
+        size: int,
+        backend: Optional['Backend'],
+        *,
+        selected: bool = False,
+        show_check: bool = False,
+    ) -> None:
         self._asset = asset
         self._size = size
         self.picture.set_paintable(None)
         self.badge.set_visible(asset.is_local_only)
         self.spinner.set_visible(True)
+        self.set_selected(selected, show_check=show_check)
 
         def done(data: Optional[bytes]) -> None:
             if self._asset is not asset:
@@ -173,6 +183,14 @@ class ThumbnailTile(Gtk.Overlay):
                 pass
 
         _submit_thumbnail(asset, size, backend, done)
+
+    def set_selected(self, selected: bool, *, show_check: bool = True) -> None:
+        if selected:
+            self.picture.add_css_class('selected')
+            self.select_check.set_visible(show_check)
+        else:
+            self.picture.remove_css_class('selected')
+            self.select_check.set_visible(False)
 
 
 def Adw_spinner_or_fallback() -> Gtk.Widget:

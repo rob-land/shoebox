@@ -27,4 +27,15 @@ template $ShoeboxThumbnailTile: Gtk.Overlay {
     halign: center;
     valign: center;
   }
+
+  [overlay]
+  Gtk.Image select_check {
+    visible: false;
+    icon-name: "object-select-symbolic";
+    halign: start;
+    valign: end;
+    margin-bottom: 6;
+    margin-start: 6;
+    styles ["select-check"]
+  }
 }

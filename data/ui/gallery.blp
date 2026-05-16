@@ -22,7 +22,7 @@ template $ShoeboxGalleryPage: Adw.NavigationPage {
 
   child: Adw.ToolbarView {
     [top]
-    Adw.HeaderBar {
+    Adw.HeaderBar browse_header {
       title-widget: Gtk.Box {
         orientation: vertical;
         spacing: 0;
@@ -49,6 +49,40 @@ template $ShoeboxGalleryPage: Adw.NavigationPage {
       Gtk.MenuButton {
         icon-name: "open-menu-symbolic";
         menu-model: primary_menu;
+      }
+
+      [end]
+      Gtk.Button select_button {
+        icon-name: "selection-mode-symbolic";
+        tooltip-text: _("Select photos");
+        clicked => $_on_select_mode_clicked();
+      }
+    }
+
+    [top]
+    Adw.HeaderBar select_header {
+      visible: false;
+      show-start-title-buttons: false;
+      show-end-title-buttons: false;
+
+      title-widget: Gtk.Label count_label {
+        label: _("Select photos");
+        styles ["heading"]
+      };
+
+      [start]
+      Gtk.Button {
+        icon-name: "window-close-symbolic";
+        tooltip-text: _("Cancel");
+        clicked => $_on_select_cancel();
+      }
+
+      [end]
+      Gtk.Button adjust_dates_button {
+        label: _("Adjust dates…");
+        sensitive: false;
+        clicked => $_on_adjust_dates_clicked();
+        styles ["suggested-action"]
       }
     }
 

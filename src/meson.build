@@ -39,6 +39,7 @@ ui_sources = [
   'shoebox/ui/gallery.py',
   'shoebox/ui/detail.py',
   'shoebox/ui/edit_dialog.py',
+  'shoebox/ui/bulk_date_dialog.py',
   'shoebox/ui/preferences.py',
   'shoebox/ui/widgets.py',
 ]
