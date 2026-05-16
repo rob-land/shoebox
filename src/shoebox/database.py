@@ -10,7 +10,7 @@ from typing import Iterable, Optional
 
 from gi.repository import GLib
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta (
@@ -43,7 +43,22 @@ CREATE TABLE IF NOT EXISTS assets (
   size_bytes INTEGER,
   is_favorite INTEGER NOT NULL DEFAULT 0,
   sync_state TEXT NOT NULL DEFAULT 'unknown',
-  last_error TEXT
+  last_error TEXT,
+  -- v2: rich EXIF / capture metadata pulled from the backend.
+  latitude REAL,
+  longitude REAL,
+  place_city TEXT,
+  place_state TEXT,
+  place_country TEXT,
+  camera_make TEXT,
+  camera_model TEXT,
+  lens TEXT,
+  iso INTEGER,
+  f_number REAL,
+  exposure_time REAL,
+  focal_length REAL,
+  orientation INTEGER,
+  description TEXT
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS assets_remote ON assets(account_id, remote_id)
@@ -61,6 +76,27 @@ CREATE TABLE IF NOT EXISTS sync_dirs (
   UNIQUE(account_id, path)
 );
 """
+
+# Schema migrations keyed by from-version → SQL that lifts to from-version+1.
+# Fresh DBs land at SCHEMA_VERSION directly via SCHEMA above and skip these.
+_MIGRATIONS: dict[int, str] = {
+    1: """
+        ALTER TABLE assets ADD COLUMN latitude REAL;
+        ALTER TABLE assets ADD COLUMN longitude REAL;
+        ALTER TABLE assets ADD COLUMN place_city TEXT;
+        ALTER TABLE assets ADD COLUMN place_state TEXT;
+        ALTER TABLE assets ADD COLUMN place_country TEXT;
+        ALTER TABLE assets ADD COLUMN camera_make TEXT;
+        ALTER TABLE assets ADD COLUMN camera_model TEXT;
+        ALTER TABLE assets ADD COLUMN lens TEXT;
+        ALTER TABLE assets ADD COLUMN iso INTEGER;
+        ALTER TABLE assets ADD COLUMN f_number REAL;
+        ALTER TABLE assets ADD COLUMN exposure_time REAL;
+        ALTER TABLE assets ADD COLUMN focal_length REAL;
+        ALTER TABLE assets ADD COLUMN orientation INTEGER;
+        ALTER TABLE assets ADD COLUMN description TEXT;
+    """,
+}
 
 
 @dataclass
@@ -86,6 +122,21 @@ class Asset:
     height: Optional[int]
     taken_at: Optional[int]
     sync_state: str
+    size_bytes: Optional[int] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    place_city: Optional[str] = None
+    place_state: Optional[str] = None
+    place_country: Optional[str] = None
+    camera_make: Optional[str] = None
+    camera_model: Optional[str] = None
+    lens: Optional[str] = None
+    iso: Optional[int] = None
+    f_number: Optional[float] = None
+    exposure_time: Optional[float] = None
+    focal_length: Optional[float] = None
+    orientation: Optional[int] = None
+    description: Optional[str] = None
 
     @property
     def is_local_only(self) -> bool:
@@ -94,6 +145,15 @@ class Asset:
     @property
     def is_server_only(self) -> bool:
         return self.local_path is None and self.remote_id is not None
+
+    @property
+    def has_location(self) -> bool:
+        return self.latitude is not None and self.longitude is not None
+
+    @property
+    def place_label(self) -> Optional[str]:
+        bits = [b for b in (self.place_city, self.place_state, self.place_country) if b]
+        return ', '.join(bits) if bits else None
 
 
 def _row_to_account(row: sqlite3.Row) -> Account:
@@ -108,6 +168,11 @@ def _row_to_account(row: sqlite3.Row) -> Account:
 
 
 def _row_to_asset(row: sqlite3.Row) -> Asset:
+    keys = row.keys()
+
+    def _opt(name):
+        return row[name] if name in keys else None
+
     return Asset(
         id=row['id'],
         account_id=row['account_id'],
@@ -120,6 +185,21 @@ def _row_to_asset(row: sqlite3.Row) -> Asset:
         height=row['height'],
         taken_at=row['taken_at'],
         sync_state=row['sync_state'],
+        size_bytes=_opt('size_bytes'),
+        latitude=_opt('latitude'),
+        longitude=_opt('longitude'),
+        place_city=_opt('place_city'),
+        place_state=_opt('place_state'),
+        place_country=_opt('place_country'),
+        camera_make=_opt('camera_make'),
+        camera_model=_opt('camera_model'),
+        lens=_opt('lens'),
+        iso=_opt('iso'),
+        f_number=_opt('f_number'),
+        exposure_time=_opt('exposure_time'),
+        focal_length=_opt('focal_length'),
+        orientation=_opt('orientation'),
+        description=_opt('description'),
     )
 
 
@@ -143,9 +223,23 @@ class Database:
         )
         row = cur.fetchone()
         if row is None:
+            # Fresh DB — SCHEMA above already created tables at the
+            # current version, so just record it.
             self._conn.execute(
                 "INSERT INTO meta(key, value) VALUES('schema_version', ?)",
                 (str(SCHEMA_VERSION),),
+            )
+            return
+
+        current = int(row['value'])
+        while current < SCHEMA_VERSION:
+            migration = _MIGRATIONS.get(current)
+            if migration:
+                self._conn.executescript(migration)
+            current += 1
+            self._conn.execute(
+                "UPDATE meta SET value = ? WHERE key = 'schema_version'",
+                (str(current),),
             )
 
     # ----- accounts -----
@@ -214,7 +308,26 @@ class Database:
         height: Optional[int] = None,
         taken_at: Optional[int] = None,
         size_bytes: Optional[int] = None,
+        latitude: Optional[float] = None,
+        longitude: Optional[float] = None,
+        place_city: Optional[str] = None,
+        place_state: Optional[str] = None,
+        place_country: Optional[str] = None,
+        camera_make: Optional[str] = None,
+        camera_model: Optional[str] = None,
+        lens: Optional[str] = None,
+        iso: Optional[int] = None,
+        f_number: Optional[float] = None,
+        exposure_time: Optional[float] = None,
+        focal_length: Optional[float] = None,
+        orientation: Optional[int] = None,
+        description: Optional[str] = None,
     ) -> None:
+        exif_cols = (
+            latitude, longitude, place_city, place_state, place_country,
+            camera_make, camera_model, lens, iso, f_number,
+            exposure_time, focal_length, orientation, description,
+        )
         # If a local-only row already has this checksum, merge them.
         if checksum:
             cur = self._conn.execute(
@@ -231,18 +344,37 @@ class Database:
                            width = COALESCE(?, width), height = COALESCE(?, height),
                            taken_at = COALESCE(?, taken_at),
                            size_bytes = COALESCE(?, size_bytes),
+                           latitude = COALESCE(?, latitude),
+                           longitude = COALESCE(?, longitude),
+                           place_city = COALESCE(?, place_city),
+                           place_state = COALESCE(?, place_state),
+                           place_country = COALESCE(?, place_country),
+                           camera_make = COALESCE(?, camera_make),
+                           camera_model = COALESCE(?, camera_model),
+                           lens = COALESCE(?, lens),
+                           iso = COALESCE(?, iso),
+                           f_number = COALESCE(?, f_number),
+                           exposure_time = COALESCE(?, exposure_time),
+                           focal_length = COALESCE(?, focal_length),
+                           orientation = COALESCE(?, orientation),
+                           description = COALESCE(?, description),
                            sync_state = 'synced'
                        WHERE id = ?""",
                     (remote_id, filename, mime_type, width, height,
-                     taken_at, size_bytes, row['id']),
+                     taken_at, size_bytes, *exif_cols, row['id']),
                 )
                 return
 
         self._conn.execute(
             """INSERT INTO assets (account_id, remote_id, checksum, filename,
                                    mime_type, width, height, taken_at, size_bytes,
-                                   sync_state)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'server_only')
+                                   sync_state,
+                                   latitude, longitude, place_city, place_state,
+                                   place_country, camera_make, camera_model, lens,
+                                   iso, f_number, exposure_time, focal_length,
+                                   orientation, description)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'server_only',
+                       ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                ON CONFLICT(account_id, remote_id) WHERE remote_id IS NOT NULL
                DO UPDATE SET checksum = excluded.checksum,
                              filename = excluded.filename,
@@ -250,9 +382,23 @@ class Database:
                              width = excluded.width,
                              height = excluded.height,
                              taken_at = excluded.taken_at,
-                             size_bytes = excluded.size_bytes""",
+                             size_bytes = excluded.size_bytes,
+                             latitude = excluded.latitude,
+                             longitude = excluded.longitude,
+                             place_city = excluded.place_city,
+                             place_state = excluded.place_state,
+                             place_country = excluded.place_country,
+                             camera_make = excluded.camera_make,
+                             camera_model = excluded.camera_model,
+                             lens = excluded.lens,
+                             iso = excluded.iso,
+                             f_number = excluded.f_number,
+                             exposure_time = excluded.exposure_time,
+                             focal_length = excluded.focal_length,
+                             orientation = excluded.orientation,
+                             description = excluded.description""",
             (account_id, remote_id, checksum, filename, mime_type,
-             width, height, taken_at, size_bytes),
+             width, height, taken_at, size_bytes, *exif_cols),
         )
 
     def upsert_local_asset(

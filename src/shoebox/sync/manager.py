@@ -123,6 +123,20 @@ class SyncManager:
             height=asset.height,
             taken_at=asset.taken_at,
             size_bytes=asset.size_bytes,
+            latitude=asset.latitude,
+            longitude=asset.longitude,
+            place_city=asset.place_city,
+            place_state=asset.place_state,
+            place_country=asset.place_country,
+            camera_make=asset.camera_make,
+            camera_model=asset.camera_model,
+            lens=asset.lens,
+            iso=asset.iso,
+            f_number=asset.f_number,
+            exposure_time=asset.exposure_time,
+            focal_length=asset.focal_length,
+            orientation=asset.orientation,
+            description=asset.description,
         )
 
     # ----- on-demand pagination (called by the gallery on scroll) -----

@@ -36,6 +36,43 @@ def _device_id() -> str:
     return f'shoebox-{socket.gethostname()}'
 
 
+def _as_int(v) -> Optional[int]:
+    if v is None or v == '':
+        return None
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _as_float(v) -> Optional[float]:
+    if v is None or v == '':
+        return None
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _parse_exposure(v) -> Optional[float]:
+    """Immich returns exposureTime as a string like '1/200' or '0.005'."""
+    if v is None or v == '':
+        return None
+    if isinstance(v, (int, float)):
+        return float(v)
+    s = str(v).strip()
+    if '/' in s:
+        try:
+            num, den = s.split('/', 1)
+            return float(num) / float(den)
+        except (ValueError, ZeroDivisionError):
+            return None
+    try:
+        return float(s)
+    except ValueError:
+        return None
+
+
 class ImmichBackend(Backend):
     name = 'immich'
     display_name = 'Immich'
@@ -177,6 +214,20 @@ class ImmichBackend(Backend):
             height=exif.get('exifImageHeight'),
             taken_at=taken_at,
             size_bytes=exif.get('fileSizeInByte'),
+            latitude=_as_float(exif.get('latitude')),
+            longitude=_as_float(exif.get('longitude')),
+            place_city=exif.get('city'),
+            place_state=exif.get('state'),
+            place_country=exif.get('country'),
+            camera_make=exif.get('make'),
+            camera_model=exif.get('model'),
+            lens=exif.get('lensModel'),
+            iso=_as_int(exif.get('iso')),
+            f_number=_as_float(exif.get('fNumber')),
+            exposure_time=_parse_exposure(exif.get('exposureTime')),
+            focal_length=_as_float(exif.get('focalLength')),
+            orientation=_as_int(exif.get('orientation')),
+            description=exif.get('description'),
         )
 
     # ---------- bytes ----------

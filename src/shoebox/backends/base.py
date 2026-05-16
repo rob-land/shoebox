@@ -25,6 +25,20 @@ class RemoteAsset:
     height: Optional[int] = None
     taken_at: Optional[int] = None
     size_bytes: Optional[int] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    place_city: Optional[str] = None
+    place_state: Optional[str] = None
+    place_country: Optional[str] = None
+    camera_make: Optional[str] = None
+    camera_model: Optional[str] = None
+    lens: Optional[str] = None
+    iso: Optional[int] = None
+    f_number: Optional[float] = None
+    exposure_time: Optional[float] = None  # seconds
+    focal_length: Optional[float] = None   # mm
+    orientation: Optional[int] = None
+    description: Optional[str] = None
 
 
 @dataclass
