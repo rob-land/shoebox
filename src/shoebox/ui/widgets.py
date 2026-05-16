@@ -154,6 +154,35 @@ class ThumbnailTile(Gtk.Overlay):
         super().__init__()
         self._size = 256
         self._asset: Optional[Asset] = None
+        self._select_cb = None  # set by the GridView factory; receives Asset
+
+        long_press = Gtk.GestureLongPress()
+        long_press.set_touch_only(False)
+        long_press.connect('pressed', self._on_long_press)
+        self.add_controller(long_press)
+
+        ctrl_click = Gtk.GestureClick()
+        ctrl_click.set_button(1)
+        ctrl_click.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+        ctrl_click.connect('pressed', self._on_click_pressed)
+        self.add_controller(ctrl_click)
+
+    def set_select_callback(self, cb) -> None:
+        self._select_cb = cb
+
+    def _on_long_press(self, _gesture, _x, _y) -> None:
+        if self._asset is not None and self._select_cb is not None:
+            self._select_cb(self._asset)
+
+    def _on_click_pressed(self, gesture, _n_press, _x, _y) -> None:
+        # Only intercept on Ctrl-click; let bare clicks propagate to the
+        # GridView's activate signal so normal navigation still works.
+        state = gesture.get_current_event_state()
+        if not (state & Gdk.ModifierType.CONTROL_MASK):
+            return
+        if self._asset is not None and self._select_cb is not None:
+            self._select_cb(self._asset)
+            gesture.set_state(Gtk.EventSequenceState.CLAIMED)
 
     def bind(
         self,

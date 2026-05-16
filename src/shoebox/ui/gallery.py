@@ -159,6 +159,7 @@ class GalleryPage(Adw.NavigationPage):
     select_header:        Adw.HeaderBar     = Gtk.Template.Child()
     count_label:          Gtk.Label         = Gtk.Template.Child()
     adjust_dates_button:  Gtk.Button        = Gtk.Template.Child()
+    edit_metadata_button: Gtk.Button        = Gtk.Template.Child()
 
     def __init__(self, window: 'ShoeboxWindow'):
         super().__init__()
@@ -200,7 +201,15 @@ class GalleryPage(Adw.NavigationPage):
     # ----- thumbnail factory (shared across sections) -----
 
     def _factory_setup(self, _factory, list_item: Gtk.ListItem) -> None:
-        list_item.set_child(ThumbnailTile())
+        tile = ThumbnailTile()
+        tile.set_select_callback(self._on_tile_select_gesture)
+        list_item.set_child(tile)
+
+    def _on_tile_select_gesture(self, asset: Asset) -> None:
+        """Long-press or Ctrl-click on a tile: enter selection mode + toggle."""
+        if not self._selection_mode:
+            self._set_selection_mode(True)
+        self._toggle_selection(asset)
 
     def _factory_bind(self, _factory, list_item: Gtk.ListItem) -> None:
         item: AssetItem = list_item.get_item()
@@ -231,6 +240,18 @@ class GalleryPage(Adw.NavigationPage):
             return
         from .bulk_date_dialog import BulkDateDialog
         dialog = BulkDateDialog(
+            self.window,
+            self._selected_assets(),
+            on_done=self._on_bulk_done,
+        )
+        dialog.present(self.window)
+
+    @Gtk.Template.Callback()
+    def _on_bulk_edit_clicked(self, *_args) -> None:
+        if not self._selected_ids:
+            return
+        from .bulk_edit_dialog import BulkEditDialog
+        dialog = BulkEditDialog(
             self.window,
             self._selected_assets(),
             on_done=self._on_bulk_done,
@@ -284,6 +305,7 @@ class GalleryPage(Adw.NavigationPage):
         else:
             self.count_label.set_text(f'{n} selected')
         self.adjust_dates_button.set_sensitive(n > 0)
+        self.edit_metadata_button.set_sensitive(n > 0)
 
     def _refresh_section_selection_buttons(self) -> None:
         for section in self._sections.values():

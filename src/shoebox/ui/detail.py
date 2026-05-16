@@ -31,6 +31,7 @@ class DetailPage(Adw.NavigationPage):
         super().__init__(title=asset.filename or 'Photo')
         self.window = window
         self.asset = asset
+        self._suppress_favorite_toggle = False
 
         if asset.local_path:
             self.local_badge.set_tooltip_text(f'Local copy: {asset.local_path}')
@@ -158,7 +159,10 @@ class DetailPage(Adw.NavigationPage):
     # ----- favorite -----
 
     def _sync_favorite_icon(self) -> None:
-        self.favorite_toggle.handler_block_by_func(self._on_favorite_toggled)
+        # Template-bound signal handlers can't reliably be looked up
+        # by Python bound method, so guard programmatic updates with a
+        # flag instead of handler_block_by_func.
+        self._suppress_favorite_toggle = True
         try:
             self.favorite_toggle.set_active(self.asset.is_favorite)
             self.favorite_toggle.set_icon_name(
@@ -166,10 +170,12 @@ class DetailPage(Adw.NavigationPage):
                 else 'non-starred-symbolic',
             )
         finally:
-            self.favorite_toggle.handler_unblock_by_func(self._on_favorite_toggled)
+            self._suppress_favorite_toggle = False
 
     @Gtk.Template.Callback()
     def _on_favorite_toggled(self, _btn) -> None:
+        if self._suppress_favorite_toggle:
+            return
         new_value = self.favorite_toggle.get_active()
         if new_value == self.asset.is_favorite:
             return

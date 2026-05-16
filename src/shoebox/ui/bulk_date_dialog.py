@@ -113,14 +113,12 @@ class BulkDateDialog(Adw.Dialog):
             self._mode_anchor.set_sensitive(False)
             self._mode_anchor.set_tooltip_text('No dated photos to anchor on')
 
-        mode_row1 = Adw.PreferencesRow()
+        mode_row1 = Adw.PreferencesRow(activatable=False)
         mode_row1.set_child(self._padded(self._mode_offset))
-        mode_row1.set_activatable_widget(self._mode_offset)
         mode_group.add(mode_row1)
 
-        mode_row2 = Adw.PreferencesRow()
+        mode_row2 = Adw.PreferencesRow(activatable=False)
         mode_row2.set_child(self._padded(self._mode_anchor))
-        mode_row2.set_activatable_widget(self._mode_anchor)
         mode_group.add(mode_row2)
         outer.append(mode_group)
 

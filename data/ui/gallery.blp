@@ -82,6 +82,13 @@ template $ShoeboxGalleryPage: Adw.NavigationPage {
         label: _("Adjust dates…");
         sensitive: false;
         clicked => $_on_adjust_dates_clicked();
+      }
+
+      [end]
+      Gtk.Button edit_metadata_button {
+        label: _("Edit…");
+        sensitive: false;
+        clicked => $_on_bulk_edit_clicked();
         styles ["suggested-action"]
       }
     }
