@@ -6,23 +6,66 @@ template $ShoeboxDetailPage: Adw.NavigationPage {
     [top]
     Adw.HeaderBar {
       [end]
+      Gtk.ToggleButton info_toggle {
+        icon-name: "info-outline-symbolic";
+        tooltip-text: _("Show info");
+        active: bind split.show-sidebar bidirectional;
+      }
+
+      [end]
       Gtk.Image local_badge {
         visible: false;
         icon-name: "folder-symbolic";
       }
     }
 
-    content: Gtk.Overlay {
-      child: Gtk.Picture picture {
-        can-shrink: true;
-        content-fit: contain;
+    content: Adw.OverlaySplitView split {
+      sidebar-position: end;
+      show-sidebar: false;
+      max-sidebar-width: 360;
+      min-sidebar-width: 280;
+
+      content: Gtk.Overlay {
+        child: Gtk.Picture picture {
+          can-shrink: true;
+          content-fit: contain;
+        };
+
+        [overlay]
+        Adw.Spinner spinner {
+          halign: center;
+          valign: center;
+        }
       };
 
-      [overlay]
-      Adw.Spinner spinner {
-        halign: center;
-        valign: center;
-      }
+      sidebar: Adw.ToolbarView {
+        [top]
+        Adw.HeaderBar {
+          show-end-title-buttons: false;
+          show-start-title-buttons: false;
+
+          title-widget: Adw.WindowTitle {
+            title: _("Info");
+          };
+        }
+
+        content: Gtk.ScrolledWindow {
+          hscrollbar-policy: never;
+
+          child: Adw.Clamp {
+            maximum-size: 360;
+
+            child: Gtk.Box sidebar_groups {
+              orientation: vertical;
+              spacing: 18;
+              margin-top: 12;
+              margin-bottom: 12;
+              margin-start: 6;
+              margin-end: 6;
+            };
+          };
+        };
+      };
     };
   };
 }
