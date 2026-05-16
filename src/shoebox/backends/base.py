@@ -25,6 +25,7 @@ class RemoteAsset:
     height: Optional[int] = None
     taken_at: Optional[int] = None
     size_bytes: Optional[int] = None
+    is_favorite: Optional[bool] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     place_city: Optional[str] = None

@@ -123,6 +123,7 @@ class SyncManager:
             height=asset.height,
             taken_at=asset.taken_at,
             size_bytes=asset.size_bytes,
+            is_favorite=asset.is_favorite,
             latitude=asset.latitude,
             longitude=asset.longitude,
             place_city=asset.place_city,

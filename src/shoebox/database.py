@@ -123,6 +123,7 @@ class Asset:
     taken_at: Optional[int]
     sync_state: str
     size_bytes: Optional[int] = None
+    is_favorite: bool = False
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     place_city: Optional[str] = None
@@ -186,6 +187,7 @@ def _row_to_asset(row: sqlite3.Row) -> Asset:
         taken_at=row['taken_at'],
         sync_state=row['sync_state'],
         size_bytes=_opt('size_bytes'),
+        is_favorite=bool(_opt('is_favorite') or 0),
         latitude=_opt('latitude'),
         longitude=_opt('longitude'),
         place_city=_opt('place_city'),
@@ -308,6 +310,7 @@ class Database:
         height: Optional[int] = None,
         taken_at: Optional[int] = None,
         size_bytes: Optional[int] = None,
+        is_favorite: Optional[bool] = None,
         latitude: Optional[float] = None,
         longitude: Optional[float] = None,
         place_city: Optional[str] = None,
@@ -323,7 +326,9 @@ class Database:
         orientation: Optional[int] = None,
         description: Optional[str] = None,
     ) -> None:
+        fav_int = None if is_favorite is None else (1 if is_favorite else 0)
         exif_cols = (
+            fav_int,
             latitude, longitude, place_city, place_state, place_country,
             camera_make, camera_model, lens, iso, f_number,
             exposure_time, focal_length, orientation, description,
@@ -344,6 +349,7 @@ class Database:
                            width = COALESCE(?, width), height = COALESCE(?, height),
                            taken_at = COALESCE(?, taken_at),
                            size_bytes = COALESCE(?, size_bytes),
+                           is_favorite = COALESCE(?, is_favorite),
                            latitude = COALESCE(?, latitude),
                            longitude = COALESCE(?, longitude),
                            place_city = COALESCE(?, place_city),
@@ -369,11 +375,13 @@ class Database:
             """INSERT INTO assets (account_id, remote_id, checksum, filename,
                                    mime_type, width, height, taken_at, size_bytes,
                                    sync_state,
+                                   is_favorite,
                                    latitude, longitude, place_city, place_state,
                                    place_country, camera_make, camera_model, lens,
                                    iso, f_number, exposure_time, focal_length,
                                    orientation, description)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'server_only',
+                       COALESCE(?, 0),
                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                ON CONFLICT(account_id, remote_id) WHERE remote_id IS NOT NULL
                DO UPDATE SET checksum = excluded.checksum,
@@ -383,6 +391,7 @@ class Database:
                              height = excluded.height,
                              taken_at = excluded.taken_at,
                              size_bytes = excluded.size_bytes,
+                             is_favorite = COALESCE(excluded.is_favorite, is_favorite),
                              latitude = excluded.latitude,
                              longitude = excluded.longitude,
                              place_city = excluded.place_city,
@@ -460,6 +469,7 @@ class Database:
         latitude: Optional[float] = None,
         longitude: Optional[float] = None,
         description: Optional[str] = None,
+        is_favorite: Optional[bool] = None,
     ) -> None:
         """Patch user-edited fields into the catalog row.
 
@@ -480,6 +490,9 @@ class Database:
         if description is not None:
             sets.append('description = ?')
             args.append(description)
+        if is_favorite is not None:
+            sets.append('is_favorite = ?')
+            args.append(1 if is_favorite else 0)
         if not sets:
             return
         args.append(asset_id)

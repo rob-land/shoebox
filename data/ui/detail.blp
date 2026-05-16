@@ -13,6 +13,13 @@ template $ShoeboxDetailPage: Adw.NavigationPage {
       }
 
       [end]
+      Gtk.ToggleButton favorite_toggle {
+        icon-name: "non-starred-symbolic";
+        tooltip-text: _("Favorite");
+        toggled => $_on_favorite_toggled();
+      }
+
+      [end]
       Gtk.Image local_badge {
         visible: false;
         icon-name: "folder-symbolic";

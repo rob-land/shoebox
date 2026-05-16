@@ -144,10 +144,11 @@ class ThumbnailTile(Gtk.Overlay):
 
     __gtype_name__ = 'ShoeboxThumbnailTile'
 
-    picture:      Gtk.Picture = Gtk.Template.Child()
-    badge:        Gtk.Image   = Gtk.Template.Child()
-    spinner:      Adw.Spinner = Gtk.Template.Child()
-    select_check: Gtk.Image   = Gtk.Template.Child()
+    picture:        Gtk.Picture = Gtk.Template.Child()
+    badge:          Gtk.Image   = Gtk.Template.Child()
+    spinner:        Adw.Spinner = Gtk.Template.Child()
+    select_check:   Gtk.Image   = Gtk.Template.Child()
+    favorite_badge: Gtk.Image   = Gtk.Template.Child()
 
     def __init__(self):
         super().__init__()
@@ -167,6 +168,7 @@ class ThumbnailTile(Gtk.Overlay):
         self._size = size
         self.picture.set_paintable(None)
         self.badge.set_visible(asset.is_local_only)
+        self.favorite_badge.set_visible(asset.is_favorite)
         self.spinner.set_visible(True)
         self.set_selected(selected, show_check=show_check)
 

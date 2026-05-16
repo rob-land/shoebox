@@ -218,6 +218,7 @@ class ImmichBackend(Backend):
             height=exif.get('exifImageHeight'),
             taken_at=taken_at,
             size_bytes=exif.get('fileSizeInByte'),
+            is_favorite=raw.get('isFavorite'),
             latitude=_as_float(exif.get('latitude')),
             longitude=_as_float(exif.get('longitude')),
             place_city=exif.get('city'),

@@ -23,6 +23,17 @@ template $ShoeboxThumbnailTile: Gtk.Overlay {
   }
 
   [overlay]
+  Gtk.Image favorite_badge {
+    visible: false;
+    icon-name: "starred-symbolic";
+    halign: start;
+    valign: start;
+    margin-top: 4;
+    margin-start: 4;
+    styles ["osd"]
+  }
+
+  [overlay]
   Adw.Spinner spinner {
     halign: center;
     valign: center;

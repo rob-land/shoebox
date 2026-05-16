@@ -19,12 +19,13 @@ if TYPE_CHECKING:
 class DetailPage(Adw.NavigationPage):
     __gtype_name__ = 'ShoeboxDetailPage'
 
-    local_badge:    Gtk.Image          = Gtk.Template.Child()
-    info_toggle:    Gtk.ToggleButton   = Gtk.Template.Child()
-    picture:        Gtk.Picture        = Gtk.Template.Child()
-    spinner:        Adw.Spinner        = Gtk.Template.Child()
-    split:          Adw.OverlaySplitView = Gtk.Template.Child()
-    sidebar_groups: Gtk.Box            = Gtk.Template.Child()
+    local_badge:     Gtk.Image          = Gtk.Template.Child()
+    info_toggle:     Gtk.ToggleButton   = Gtk.Template.Child()
+    favorite_toggle: Gtk.ToggleButton   = Gtk.Template.Child()
+    picture:         Gtk.Picture        = Gtk.Template.Child()
+    spinner:         Adw.Spinner        = Gtk.Template.Child()
+    split:           Adw.OverlaySplitView = Gtk.Template.Child()
+    sidebar_groups:  Gtk.Box            = Gtk.Template.Child()
 
     def __init__(self, window: 'ShoeboxWindow', asset: Asset):
         super().__init__(title=asset.filename or 'Photo')
@@ -43,6 +44,7 @@ class DetailPage(Adw.NavigationPage):
             lambda *_: self.split.set_collapsed(self.window.compact),
         )
 
+        self._sync_favorite_icon()
         self._populate_sidebar()
         self.connect('shown', lambda *_: self._load())
 
@@ -150,7 +152,53 @@ class DetailPage(Adw.NavigationPage):
 
     def _on_saved(self, refreshed: Asset) -> None:
         self.asset = refreshed
+        self._sync_favorite_icon()
         self._populate_sidebar()
+
+    # ----- favorite -----
+
+    def _sync_favorite_icon(self) -> None:
+        self.favorite_toggle.handler_block_by_func(self._on_favorite_toggled)
+        try:
+            self.favorite_toggle.set_active(self.asset.is_favorite)
+            self.favorite_toggle.set_icon_name(
+                'starred-symbolic' if self.asset.is_favorite
+                else 'non-starred-symbolic',
+            )
+        finally:
+            self.favorite_toggle.handler_unblock_by_func(self._on_favorite_toggled)
+
+    @Gtk.Template.Callback()
+    def _on_favorite_toggled(self, _btn) -> None:
+        new_value = self.favorite_toggle.get_active()
+        if new_value == self.asset.is_favorite:
+            return
+        self.asset.is_favorite = new_value
+        self.favorite_toggle.set_icon_name(
+            'starred-symbolic' if new_value else 'non-starred-symbolic',
+        )
+        asset = self.asset
+        window = self.window
+
+        def work() -> None:
+            if asset.remote_id:
+                backend = window.app.primary_backend()
+                if backend is not None:
+                    backend.update_asset(
+                        asset.remote_id, is_favorite=new_value,
+                    )
+            from ..database import Database
+            db = Database()
+            try:
+                db.update_asset_metadata(asset.id, is_favorite=new_value)
+            finally:
+                db.close()
+
+        run_async(
+            work,
+            on_done=lambda _: None,
+            on_error=lambda e: window.toast(f'Favorite update failed: {e}'),
+        )
 
     def _build_location_group(self) -> Gtk.Widget:
         a = self.asset
