@@ -107,3 +107,21 @@ class Backend(ABC):
     @abstractmethod
     def asset_exists(self, checksum: str) -> Optional[str]:
         """Check whether an asset with this checksum exists; return remote_id or None."""
+
+    def update_asset(
+        self,
+        remote_id: str,
+        *,
+        taken_at: Optional[int] = None,
+        latitude: Optional[float] = None,
+        longitude: Optional[float] = None,
+        description: Optional[str] = None,
+        is_favorite: Optional[bool] = None,
+    ) -> None:
+        """Push metadata edits to the backend.
+
+        Optional capability: backends that don't implement this raise
+        NotImplementedError, and the caller should treat the edit as
+        local-only. Fields left as None are not updated.
+        """
+        raise NotImplementedError

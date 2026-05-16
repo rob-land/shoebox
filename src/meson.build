@@ -14,6 +14,7 @@ shoebox_sources = [
   'shoebox/background_portal.py',
   'shoebox/window.py',
   'shoebox/database.py',
+  'shoebox/exif_writer.py',
   'shoebox/secrets.py',
   'shoebox/settings.py',
   'shoebox/worker.py',
@@ -37,6 +38,7 @@ ui_sources = [
   'shoebox/ui/setup.py',
   'shoebox/ui/gallery.py',
   'shoebox/ui/detail.py',
+  'shoebox/ui/edit_dialog.py',
   'shoebox/ui/preferences.py',
   'shoebox/ui/widgets.py',
 ]

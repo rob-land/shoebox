@@ -143,6 +143,10 @@ class ImmichBackend(Backend):
         raw = self._request('POST', path, body=body)
         return json.loads(raw or b'null')
 
+    def _put_json(self, path: str, body: dict) -> dict | list:
+        raw = self._request('PUT', path, body=body)
+        return json.loads(raw or b'null')
+
     # ---------- auth ----------
 
     def login(self, username: str, password: str) -> tuple[str, UserInfo]:
@@ -249,6 +253,33 @@ class ImmichBackend(Backend):
         )
 
     # ---------- upload ----------
+
+    def update_asset(
+        self,
+        remote_id: str,
+        *,
+        taken_at: Optional[int] = None,
+        latitude: Optional[float] = None,
+        longitude: Optional[float] = None,
+        description: Optional[str] = None,
+        is_favorite: Optional[bool] = None,
+    ) -> None:
+        body: dict = {}
+        if taken_at is not None:
+            body['dateTimeOriginal'] = datetime.fromtimestamp(
+                taken_at, tz=timezone.utc,
+            ).isoformat()
+        if latitude is not None:
+            body['latitude'] = latitude
+        if longitude is not None:
+            body['longitude'] = longitude
+        if description is not None:
+            body['description'] = description
+        if is_favorite is not None:
+            body['isFavorite'] = is_favorite
+        if not body:
+            return
+        self._put_json(f'/api/assets/{remote_id}', body)
 
     def asset_exists(self, checksum: str) -> Optional[str]:
         resp = self._post_json('/api/assets/bulk-upload-check', {

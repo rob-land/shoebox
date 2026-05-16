@@ -452,6 +452,41 @@ class Database:
             (state, error, asset_id),
         )
 
+    def update_asset_metadata(
+        self,
+        asset_id: int,
+        *,
+        taken_at: Optional[int] = None,
+        latitude: Optional[float] = None,
+        longitude: Optional[float] = None,
+        description: Optional[str] = None,
+    ) -> None:
+        """Patch user-edited fields into the catalog row.
+
+        Fields left as None are not touched; pass an explicit value (or
+        empty string for description) to clear.
+        """
+        sets: list[str] = []
+        args: list = []
+        if taken_at is not None:
+            sets.append('taken_at = ?')
+            args.append(taken_at)
+        if latitude is not None:
+            sets.append('latitude = ?')
+            args.append(latitude)
+        if longitude is not None:
+            sets.append('longitude = ?')
+            args.append(longitude)
+        if description is not None:
+            sets.append('description = ?')
+            args.append(description)
+        if not sets:
+            return
+        args.append(asset_id)
+        self._conn.execute(
+            f'UPDATE assets SET {", ".join(sets)} WHERE id = ?', args,
+        )
+
     def list_assets(self, account_id: int, limit: int = 500, offset: int = 0) -> list[Asset]:
         cur = self._conn.execute(
             """SELECT * FROM assets WHERE account_id = ?

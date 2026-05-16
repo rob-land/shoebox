@@ -100,6 +100,13 @@ class DetailPage(Adw.NavigationPage):
     def _populate_sidebar(self) -> None:
         a = self.asset
 
+        # Clear any prior content (sidebar is rebuilt after edits).
+        child = self.sidebar_groups.get_first_child()
+        while child is not None:
+            nxt = child.get_next_sibling()
+            self.sidebar_groups.remove(child)
+            child = nxt
+
         file_rows = [
             ('Filename', a.filename or '—'),
             ('Type', a.mime_type or '—'),
@@ -125,6 +132,25 @@ class DetailPage(Adw.NavigationPage):
             self.sidebar_groups.append(_build_group(
                 'Description', [(None, a.description)],
             ))
+
+        # Edit row at the bottom — single entry to the metadata dialog.
+        edit_group = Adw.PreferencesGroup()
+        edit_row = Adw.ButtonRow(
+            title='Edit metadata',
+            start_icon_name='document-edit-symbolic',
+        )
+        edit_row.connect('activated', self._on_edit_clicked)
+        edit_group.add(edit_row)
+        self.sidebar_groups.append(edit_group)
+
+    def _on_edit_clicked(self, _row) -> None:
+        from .edit_dialog import EditMetadataDialog
+        dialog = EditMetadataDialog(self.window, self.asset, on_saved=self._on_saved)
+        dialog.present(self.window)
+
+    def _on_saved(self, refreshed: Asset) -> None:
+        self.asset = refreshed
+        self._populate_sidebar()
 
     def _build_location_group(self) -> Gtk.Widget:
         a = self.asset
