@@ -7,7 +7,7 @@ import logging
 import threading
 import time
 from collections import OrderedDict
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
@@ -141,7 +141,7 @@ def _get_thumb_pool() -> ThreadPoolExecutor:
 def _submit_thumbnail(
     asset: Asset, size: int, backend: Optional['Backend'],
     on_done,
-) -> None:
+) -> Future:
     def worker() -> None:
         try:
             data = _load_thumbnail_bytes(asset, size, backend)
@@ -150,7 +150,7 @@ def _submit_thumbnail(
             data = None
         GLib.idle_add(_safely_call, on_done, data)
 
-    _get_thumb_pool().submit(worker)
+    return _get_thumb_pool().submit(worker)
 
 
 def _safely_call(cb, arg) -> bool:
@@ -181,6 +181,7 @@ class ThumbnailTile(Gtk.Overlay):
         self._size = 256
         self._asset: Optional[Asset] = None
         self._select_cb = None  # set by the GridView factory; receives Asset
+        self._pending: Optional[Future] = None
 
         long_press = Gtk.GestureLongPress()
         long_press.set_touch_only(False)
@@ -219,6 +220,14 @@ class ThumbnailTile(Gtk.Overlay):
         selected: bool = False,
         show_check: bool = False,
     ) -> None:
+        # Drop any prior load — Future.cancel only works if the worker
+        # hasn't started yet, but during fast scrolling that's the common
+        # case (queued tasks pile up faster than 6 workers can drain).
+        # Releases queue slots so newly-visible tiles get serviced first.
+        if self._pending is not None:
+            self._pending.cancel()
+            self._pending = None
+
         self._asset = asset
         self._size = size
         self.badge.set_visible(asset.is_local_only)
@@ -240,6 +249,7 @@ class ThumbnailTile(Gtk.Overlay):
         def done(data: Optional[bytes]) -> None:
             if self._asset is not asset:
                 return  # row was rebound to a different asset
+            self._pending = None
             self.spinner.set_visible(False)
             if not data:
                 return
@@ -250,7 +260,7 @@ class ThumbnailTile(Gtk.Overlay):
             _texture_cache_put(cache_key, texture)
             self.picture.set_paintable(texture)
 
-        _submit_thumbnail(asset, size, backend, done)
+        self._pending = _submit_thumbnail(asset, size, backend, done)
 
     def set_selected(self, selected: bool, *, show_check: bool = True) -> None:
         if selected:
