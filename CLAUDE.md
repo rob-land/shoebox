@@ -10,7 +10,9 @@ gating for Wi-Fi-only / unmetered / charging-only sync.
 
 App ID: `land.rob.shoebox`. License: GPL-3.0-or-later.
 
-Written entirely by Claude. PRs welcome.
+## Code quality
+
+A core goal is well-structured, readable code that follows idiomatic Python (PEP 8) and GNOME / libadwaita conventions; the cohort-shared [`STYLE_GUIDE.md`](STYLE_GUIDE.md) layers on top. When existing code doesn't meet that bar, refactor rather than perpetuate the pattern.
 
 ## Before making changes
 
