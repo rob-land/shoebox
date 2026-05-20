@@ -57,6 +57,13 @@ template $ShoeboxGalleryPage: Adw.NavigationPage {
         tooltip-text: _("Select photos");
         clicked => $_on_select_mode_clicked();
       }
+
+      [end]
+      Gtk.Button search_button {
+        icon-name: "system-search-symbolic";
+        tooltip-text: _("Search");
+        clicked => $_on_search_clicked();
+      }
     }
 
     [top]

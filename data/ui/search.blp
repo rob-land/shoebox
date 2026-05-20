@@ -1,0 +1,100 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $ShoeboxSearchPage: Adw.NavigationPage {
+  title: _("Search");
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      title-widget: Gtk.SearchEntry search_entry {
+        placeholder-text: _("Describe a photo…");
+        hexpand: true;
+        search-delay: 350;
+        search-changed => $_on_search_changed();
+        activate => $_on_search_activate();
+      };
+    }
+
+    content: Gtk.Stack stack {
+      Gtk.StackPage {
+        name: "prompt";
+
+        child: Adw.StatusPage {
+          icon-name: "system-search-symbolic";
+          title: _("Search your library");
+          description: _("Try “red bicycle”, “beach sunset”, or “dog on a couch”. Results are ranked by similarity.");
+        };
+      }
+
+      Gtk.StackPage {
+        name: "loading";
+
+        child: Gtk.Box {
+          orientation: vertical;
+          spacing: 12;
+          halign: center;
+          valign: center;
+          hexpand: true;
+          vexpand: true;
+
+          Adw.Spinner {
+            width-request: 32;
+            height-request: 32;
+          }
+
+          Gtk.Label {
+            label: _("Searching…");
+            styles ["dim-label"]
+          }
+        };
+      }
+
+      Gtk.StackPage {
+        name: "empty";
+
+        child: Adw.StatusPage {
+          icon-name: "edit-find-symbolic";
+          title: _("No matches");
+          description: _("Try a shorter or more general query.");
+        };
+      }
+
+      Gtk.StackPage {
+        name: "error";
+
+        child: Adw.StatusPage error_status {
+          icon-name: "dialog-error-symbolic";
+          title: _("Search failed");
+        };
+      }
+
+      Gtk.StackPage {
+        name: "results";
+
+        child: Gtk.ScrolledWindow {
+          hexpand: true;
+          vexpand: true;
+
+          child: Gtk.Box {
+            orientation: vertical;
+            margin-start: 12;
+            margin-end: 12;
+            margin-top: 12;
+
+            Gtk.Label results_caption {
+              halign: start;
+              margin-bottom: 6;
+              styles ["caption", "dim-label"]
+            }
+
+            Gtk.GridView results_grid {
+              hexpand: true;
+              vexpand: false;
+            }
+          };
+        };
+      }
+    };
+  };
+}

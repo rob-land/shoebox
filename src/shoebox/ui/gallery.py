@@ -8,8 +8,9 @@ page from the server in the background.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from datetime import date, datetime
-from typing import TYPE_CHECKING, Iterable, Optional
+from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gio, GLib, Gtk
 
@@ -26,7 +27,7 @@ _SERVER_PAGE_SIZE = 200  # rows to fetch from the server per scroll fetch
 _UNDATED_KEY = '0000-00-00'
 
 
-def _day_key(taken_at: Optional[int]) -> tuple[str, str]:
+def _day_key(taken_at: int | None) -> tuple[str, str]:
     """Return a (sort-key, display-title) pair for a photo's day section.
 
     Undated photos sort to the very end via the _UNDATED_KEY sentinel.
@@ -76,7 +77,7 @@ class _Section:
 
     def __init__(
         self,
-        page: 'GalleryPage',
+        page: GalleryPage,
         key: str,
         title: str,
     ):
@@ -161,7 +162,7 @@ class GalleryPage(Adw.NavigationPage):
     adjust_dates_button:  Gtk.Button        = Gtk.Template.Child()
     edit_metadata_button: Gtk.Button        = Gtk.Template.Child()
 
-    def __init__(self, window: 'ShoeboxWindow'):
+    def __init__(self, window: ShoeboxWindow):
         super().__init__()
         self.window = window
 
@@ -172,7 +173,7 @@ class GalleryPage(Adw.NavigationPage):
         self._has_more_on_server: bool = True
         self._loading_more: bool = False
         self._sync_manager = None
-        self._pill_hide_id: Optional[int] = None
+        self._pill_hide_id: int | None = None
         self._last_pill_text: str = ''
         self._selection_mode: bool = False
         self._selected_ids: set[int] = set()
@@ -223,6 +224,13 @@ class GalleryPage(Adw.NavigationPage):
 
     def _factory_unbind(self, _factory, list_item: Gtk.ListItem) -> None:
         pass
+
+    # ----- search -----
+
+    @Gtk.Template.Callback()
+    def _on_search_clicked(self, *_args) -> None:
+        from .search import SearchPage
+        self.window.push(SearchPage(self.window))
 
     # ----- selection mode -----
 
@@ -276,7 +284,7 @@ class GalleryPage(Adw.NavigationPage):
         self._refresh_visible_tiles()
         self._update_selection_count()
 
-    def _select_all_in_section(self, section: '_Section') -> None:
+    def _select_all_in_section(self, section: _Section) -> None:
         ids = {section.store.get_item(i).asset.id
                for i in range(section.store.get_n_items())}
         # Toggle: if every item is already selected, deselect them; else select.
@@ -340,7 +348,7 @@ class GalleryPage(Adw.NavigationPage):
 
     # ----- backend / sync glue -----
 
-    def _backend(self) -> Optional[Backend]:
+    def _backend(self) -> Backend | None:
         return self.window.app.primary_backend()
 
     def _sync(self):

@@ -5,6 +5,7 @@ blueprint_sources = files(
   'thumbnail-tile.blp',
   'preferences.blp',
   'gallery.blp',
+  'search.blp',
   'setup-welcome.blp',
   'setup-server.blp',
   'setup-login.blp',

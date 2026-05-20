@@ -7,6 +7,7 @@ API endpoints used (Immich >= 1.106; rename here if you run an older version):
   POST /api/auth/validateToken               header auth → {authStatus: true}
   GET  /api/users/me                         current user info
   POST /api/search/metadata                  paged asset listing
+  POST /api/search/smart                     CLIP-backed natural-language search
   POST /api/assets/bulk-upload-check         dedupe by checksum
   GET  /api/assets/{id}/thumbnail            thumbnail bytes
   GET  /api/assets/{id}/original             original bytes
@@ -21,8 +22,6 @@ import os
 import socket
 import uuid
 from datetime import datetime, timezone
-from typing import Optional
-
 
 from gi.repository import GLib, Soup
 
@@ -36,7 +35,7 @@ def _device_id() -> str:
     return f'shoebox-{socket.gethostname()}'
 
 
-def _as_int(v) -> Optional[int]:
+def _as_int(v) -> int | None:
     if v is None or v == '':
         return None
     try:
@@ -45,7 +44,7 @@ def _as_int(v) -> Optional[int]:
         return None
 
 
-def _as_float(v) -> Optional[float]:
+def _as_float(v) -> float | None:
     if v is None or v == '':
         return None
     try:
@@ -54,7 +53,7 @@ def _as_float(v) -> Optional[float]:
         return None
 
 
-def _parse_exposure(v) -> Optional[float]:
+def _parse_exposure(v) -> float | None:
     """Immich returns exposureTime as a string like '1/200' or '0.005'."""
     if v is None or v == '':
         return None
@@ -77,7 +76,7 @@ class ImmichBackend(Backend):
     name = 'immich'
     display_name = 'Immich'
 
-    def __init__(self, server_url: str, token: Optional[str] = None):
+    def __init__(self, server_url: str, token: str | None = None):
         super().__init__(server_url, token)
         self._session = Soup.Session.new()
         self._session.set_user_agent(USER_AGENT)
@@ -90,10 +89,10 @@ class ImmichBackend(Backend):
         method: str,
         path: str,
         *,
-        body: Optional[dict] = None,
-        raw_body: Optional[bytes] = None,
-        body_content_type: Optional[str] = None,
-        params: Optional[dict] = None,
+        body: dict | None = None,
+        raw_body: bytes | None = None,
+        body_content_type: str | None = None,
+        params: dict | None = None,
         accept: str = 'application/json',
     ) -> bytes:
         url = self.server_url + path
@@ -196,11 +195,27 @@ class ImmichBackend(Backend):
         has_more = bool(assets.get('nextPage'))
         return items, has_more
 
+    def search_smart(self, query: str, *, limit: int = 100) -> list[RemoteAsset]:
+        # Immich's /search/smart returns the same {assets: {items: [...]}} shape
+        # as /search/metadata, ordered by CLIP relevance. `size` caps the page;
+        # we only ever ask for the first page since relevance falls off fast.
+        q = query.strip()
+        if not q:
+            return []
+        resp = self._post_json('/api/search/smart', {
+            'query': q,
+            'size': max(1, min(limit, 250)),
+            'page': 1,
+            'withExif': True,
+        })
+        assets = resp.get('assets', {}) if isinstance(resp, dict) else {}
+        return [self._asset_from_json(r) for r in assets.get('items', [])]
+
     @staticmethod
     def _asset_from_json(raw: dict) -> RemoteAsset:
         exif = raw.get('exifInfo') or {}
         taken = raw.get('fileCreatedAt') or raw.get('localDateTime')
-        taken_at: Optional[int] = None
+        taken_at: int | None = None
         if taken:
             try:
                 taken_at = int(
@@ -263,11 +278,11 @@ class ImmichBackend(Backend):
         self,
         remote_id: str,
         *,
-        taken_at: Optional[int] = None,
-        latitude: Optional[float] = None,
-        longitude: Optional[float] = None,
-        description: Optional[str] = None,
-        is_favorite: Optional[bool] = None,
+        taken_at: int | None = None,
+        latitude: float | None = None,
+        longitude: float | None = None,
+        description: str | None = None,
+        is_favorite: bool | None = None,
     ) -> None:
         body: dict = {}
         if taken_at is not None:
@@ -286,7 +301,7 @@ class ImmichBackend(Backend):
             return
         self._put_json(f'/api/assets/{remote_id}', body)
 
-    def asset_exists(self, checksum: str) -> Optional[str]:
+    def asset_exists(self, checksum: str) -> str | None:
         resp = self._post_json('/api/assets/bulk-upload-check', {
             'assets': [{'id': checksum, 'checksum': checksum}],
         })
@@ -301,7 +316,7 @@ class ImmichBackend(Backend):
         local_path: str,
         *,
         checksum: str,
-        taken_at: Optional[int] = None,
+        taken_at: int | None = None,
     ) -> str:
         existing = self.asset_exists(checksum)
         if existing:

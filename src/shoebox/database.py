@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import sqlite3
 import time
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Optional
 
 from gi.repository import GLib
 
@@ -105,39 +105,39 @@ class Account:
     backend: str
     server_url: str
     username: str
-    user_id: Optional[str]
-    display_name: Optional[str]
+    user_id: str | None
+    display_name: str | None
 
 
 @dataclass
 class Asset:
     id: int
     account_id: int
-    remote_id: Optional[str]
-    checksum: Optional[str]
-    local_path: Optional[str]
-    filename: Optional[str]
-    mime_type: Optional[str]
-    width: Optional[int]
-    height: Optional[int]
-    taken_at: Optional[int]
+    remote_id: str | None
+    checksum: str | None
+    local_path: str | None
+    filename: str | None
+    mime_type: str | None
+    width: int | None
+    height: int | None
+    taken_at: int | None
     sync_state: str
-    size_bytes: Optional[int] = None
+    size_bytes: int | None = None
     is_favorite: bool = False
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    place_city: Optional[str] = None
-    place_state: Optional[str] = None
-    place_country: Optional[str] = None
-    camera_make: Optional[str] = None
-    camera_model: Optional[str] = None
-    lens: Optional[str] = None
-    iso: Optional[int] = None
-    f_number: Optional[float] = None
-    exposure_time: Optional[float] = None
-    focal_length: Optional[float] = None
-    orientation: Optional[int] = None
-    description: Optional[str] = None
+    latitude: float | None = None
+    longitude: float | None = None
+    place_city: str | None = None
+    place_state: str | None = None
+    place_country: str | None = None
+    camera_make: str | None = None
+    camera_model: str | None = None
+    lens: str | None = None
+    iso: int | None = None
+    f_number: float | None = None
+    exposure_time: float | None = None
+    focal_length: float | None = None
+    orientation: int | None = None
+    description: str | None = None
 
     @property
     def is_local_only(self) -> bool:
@@ -152,7 +152,7 @@ class Asset:
         return self.latitude is not None and self.longitude is not None
 
     @property
-    def place_label(self) -> Optional[str]:
+    def place_label(self) -> str | None:
         bits = [b for b in (self.place_city, self.place_state, self.place_country) if b]
         return ', '.join(bits) if bits else None
 
@@ -206,7 +206,7 @@ def _row_to_asset(row: sqlite3.Row) -> Asset:
 
 
 class Database:
-    def __init__(self, path: Optional[Path] = None):
+    def __init__(self, path: Path | None = None):
         if path is None:
             data_dir = Path(GLib.get_user_data_dir()) / 'shoebox'
             data_dir.mkdir(parents=True, exist_ok=True)
@@ -251,8 +251,8 @@ class Database:
         backend: str,
         server_url: str,
         username: str,
-        user_id: Optional[str] = None,
-        display_name: Optional[str] = None,
+        user_id: str | None = None,
+        display_name: str | None = None,
     ) -> Account:
         cur = self._conn.execute(
             """INSERT INTO accounts (backend, server_url, username,
@@ -266,7 +266,7 @@ class Database:
         cur = self._conn.execute('SELECT * FROM accounts ORDER BY id')
         return [_row_to_account(r) for r in cur.fetchall()]
 
-    def get_account(self, account_id: int) -> Optional[Account]:
+    def get_account(self, account_id: int) -> Account | None:
         cur = self._conn.execute('SELECT * FROM accounts WHERE id = ?', (account_id,))
         row = cur.fetchone()
         return _row_to_account(row) if row else None
@@ -303,28 +303,28 @@ class Database:
         account_id: int,
         remote_id: str,
         *,
-        checksum: Optional[str] = None,
-        filename: Optional[str] = None,
-        mime_type: Optional[str] = None,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
-        taken_at: Optional[int] = None,
-        size_bytes: Optional[int] = None,
-        is_favorite: Optional[bool] = None,
-        latitude: Optional[float] = None,
-        longitude: Optional[float] = None,
-        place_city: Optional[str] = None,
-        place_state: Optional[str] = None,
-        place_country: Optional[str] = None,
-        camera_make: Optional[str] = None,
-        camera_model: Optional[str] = None,
-        lens: Optional[str] = None,
-        iso: Optional[int] = None,
-        f_number: Optional[float] = None,
-        exposure_time: Optional[float] = None,
-        focal_length: Optional[float] = None,
-        orientation: Optional[int] = None,
-        description: Optional[str] = None,
+        checksum: str | None = None,
+        filename: str | None = None,
+        mime_type: str | None = None,
+        width: int | None = None,
+        height: int | None = None,
+        taken_at: int | None = None,
+        size_bytes: int | None = None,
+        is_favorite: bool | None = None,
+        latitude: float | None = None,
+        longitude: float | None = None,
+        place_city: str | None = None,
+        place_state: str | None = None,
+        place_country: str | None = None,
+        camera_make: str | None = None,
+        camera_model: str | None = None,
+        lens: str | None = None,
+        iso: int | None = None,
+        f_number: float | None = None,
+        exposure_time: float | None = None,
+        focal_length: float | None = None,
+        orientation: int | None = None,
+        description: str | None = None,
     ) -> None:
         fav_int = None if is_favorite is None else (1 if is_favorite else 0)
         exif_cols = (
@@ -416,12 +416,12 @@ class Database:
         local_path: str,
         checksum: str,
         *,
-        filename: Optional[str] = None,
-        mime_type: Optional[str] = None,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
-        taken_at: Optional[int] = None,
-        size_bytes: Optional[int] = None,
+        filename: str | None = None,
+        mime_type: str | None = None,
+        width: int | None = None,
+        height: int | None = None,
+        taken_at: int | None = None,
+        size_bytes: int | None = None,
     ) -> None:
         # If a server-only row already has this checksum, merge them.
         cur = self._conn.execute(
@@ -455,7 +455,7 @@ class Database:
              width, height, taken_at, size_bytes),
         )
 
-    def mark_asset_state(self, asset_id: int, state: str, error: Optional[str] = None) -> None:
+    def mark_asset_state(self, asset_id: int, state: str, error: str | None = None) -> None:
         self._conn.execute(
             'UPDATE assets SET sync_state = ?, last_error = ? WHERE id = ?',
             (state, error, asset_id),
@@ -465,11 +465,11 @@ class Database:
         self,
         asset_id: int,
         *,
-        taken_at: Optional[int] = None,
-        latitude: Optional[float] = None,
-        longitude: Optional[float] = None,
-        description: Optional[str] = None,
-        is_favorite: Optional[bool] = None,
+        taken_at: int | None = None,
+        latitude: float | None = None,
+        longitude: float | None = None,
+        description: str | None = None,
+        is_favorite: bool | None = None,
     ) -> None:
         """Patch user-edited fields into the catalog row.
 
@@ -508,6 +508,25 @@ class Database:
             (account_id, limit, offset),
         )
         return [_row_to_asset(r) for r in cur.fetchall()]
+
+    def list_assets_by_remote_ids(
+        self, account_id: int, remote_ids: list[str],
+    ) -> list[Asset]:
+        """Return Asset rows matching *remote_ids*, in the input order.
+
+        Remote ids without a catalog row (e.g. a server-side asset that
+        the local sync hasn't ingested yet) are silently skipped.
+        """
+        if not remote_ids:
+            return []
+        placeholders = ','.join('?' * len(remote_ids))
+        cur = self._conn.execute(
+            f"""SELECT * FROM assets
+                WHERE account_id = ? AND remote_id IN ({placeholders})""",
+            (account_id, *remote_ids),
+        )
+        by_id = {r['remote_id']: _row_to_asset(r) for r in cur.fetchall()}
+        return [by_id[rid] for rid in remote_ids if rid in by_id]
 
     def pending_uploads(self, account_id: int) -> Iterable[Asset]:
         cur = self._conn.execute(

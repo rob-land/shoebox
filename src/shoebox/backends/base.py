@@ -7,8 +7,8 @@ a worker thread by callers that need to keep the GTK main loop responsive.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Iterator, Optional
 
 
 class BackendError(Exception):
@@ -18,42 +18,42 @@ class BackendError(Exception):
 @dataclass
 class RemoteAsset:
     remote_id: str
-    checksum: Optional[str] = None
-    filename: Optional[str] = None
-    mime_type: Optional[str] = None
-    width: Optional[int] = None
-    height: Optional[int] = None
-    taken_at: Optional[int] = None
-    size_bytes: Optional[int] = None
-    is_favorite: Optional[bool] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    place_city: Optional[str] = None
-    place_state: Optional[str] = None
-    place_country: Optional[str] = None
-    camera_make: Optional[str] = None
-    camera_model: Optional[str] = None
-    lens: Optional[str] = None
-    iso: Optional[int] = None
-    f_number: Optional[float] = None
-    exposure_time: Optional[float] = None  # seconds
-    focal_length: Optional[float] = None   # mm
-    orientation: Optional[int] = None
-    description: Optional[str] = None
+    checksum: str | None = None
+    filename: str | None = None
+    mime_type: str | None = None
+    width: int | None = None
+    height: int | None = None
+    taken_at: int | None = None
+    size_bytes: int | None = None
+    is_favorite: bool | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    place_city: str | None = None
+    place_state: str | None = None
+    place_country: str | None = None
+    camera_make: str | None = None
+    camera_model: str | None = None
+    lens: str | None = None
+    iso: int | None = None
+    f_number: float | None = None
+    exposure_time: float | None = None  # seconds
+    focal_length: float | None = None   # mm
+    orientation: int | None = None
+    description: str | None = None
 
 
 @dataclass
 class UserInfo:
     user_id: str
     username: str
-    display_name: Optional[str] = None
+    display_name: str | None = None
 
 
 class Backend(ABC):
     name: str = 'abstract'
     display_name: str = 'Abstract Backend'
 
-    def __init__(self, server_url: str, token: Optional[str] = None):
+    def __init__(self, server_url: str, token: str | None = None):
         self.server_url = server_url.rstrip('/')
         self.token = token
 
@@ -75,7 +75,7 @@ class Backend(ABC):
         """
 
     def iter_assets(
-        self, *, page_size: int = 200, since: Optional[int] = None,
+        self, *, page_size: int = 200, since: int | None = None,
     ) -> Iterator[RemoteAsset]:
         """Yield every remote asset by walking pages. Default impl uses fetch_page."""
         page = 1
@@ -101,23 +101,32 @@ class Backend(ABC):
         local_path: str,
         *,
         checksum: str,
-        taken_at: Optional[int] = None,
+        taken_at: int | None = None,
     ) -> str:
         """Upload a local file, return the remote_id."""
 
     @abstractmethod
-    def asset_exists(self, checksum: str) -> Optional[str]:
+    def asset_exists(self, checksum: str) -> str | None:
         """Check whether an asset with this checksum exists; return remote_id or None."""
+
+    def search_smart(self, query: str, *, limit: int = 100) -> list[RemoteAsset]:
+        """Natural-language search across the backend's library.
+
+        Optional capability: backends without a smart-search index raise
+        NotImplementedError, and the caller should hide the search UI or
+        fall back to a local-only mode.
+        """
+        raise NotImplementedError
 
     def update_asset(
         self,
         remote_id: str,
         *,
-        taken_at: Optional[int] = None,
-        latitude: Optional[float] = None,
-        longitude: Optional[float] = None,
-        description: Optional[str] = None,
-        is_favorite: Optional[bool] = None,
+        taken_at: int | None = None,
+        latitude: float | None = None,
+        longitude: float | None = None,
+        description: str | None = None,
+        is_favorite: bool | None = None,
     ) -> None:
         """Push metadata edits to the backend.
 
