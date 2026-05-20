@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING
 
 from gi.repository import GLib
 
@@ -38,13 +39,13 @@ class SyncManager:
 
     def __init__(
         self,
-        app: 'ShoeboxApplication',
+        app: ShoeboxApplication,
         account: Account,
         backend: Backend,
         *,
-        on_progress: Optional[ProgressFn] = None,
-        on_complete: Optional[Callable[[], None]] = None,
-        on_error: Optional[Callable[[str], None]] = None,
+        on_progress: ProgressFn | None = None,
+        on_complete: Callable[[], None] | None = None,
+        on_error: Callable[[str], None] | None = None,
     ):
         self.app = app
         self.account = account

@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import threading
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from gi.repository import GLib
 
@@ -11,8 +12,8 @@ from gi.repository import GLib
 def run_async(
     func: Callable[..., Any],
     *args: Any,
-    on_done: Optional[Callable[[Any], None]] = None,
-    on_error: Optional[Callable[[BaseException], None]] = None,
+    on_done: Callable[[Any], None] | None = None,
+    on_error: Callable[[BaseException], None] | None = None,
 ) -> threading.Thread:
     """Run *func(\\*args)* in a background thread.
 

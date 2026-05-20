@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
-
 from gi.repository import Secret
 
 SCHEMA = Secret.Schema.new(
@@ -29,7 +26,7 @@ def store_token(account_id: int, backend: str, token: str) -> bool:
     )
 
 
-def lookup_token(account_id: int, backend: str) -> Optional[str]:
+def lookup_token(account_id: int, backend: str) -> str | None:
     return Secret.password_lookup_sync(
         SCHEMA,
         {'backend': backend, 'account_id': str(account_id)},

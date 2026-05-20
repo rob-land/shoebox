@@ -7,10 +7,8 @@ if the daemons aren't present we return permissive defaults.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 from gi.repository import Gio, GLib
-
 
 # NetworkManager DeviceType enum (selected values)
 NM_DEVICE_TYPE_WIFI = 2
@@ -26,7 +24,7 @@ class NetworkState:
     metered: bool
 
     @classmethod
-    def unknown(cls) -> 'NetworkState':
+    def unknown(cls) -> NetworkState:
         return cls(online=True, on_wifi=True, metered=False)
 
 
@@ -35,11 +33,11 @@ class PowerState:
     on_battery: bool
 
     @classmethod
-    def unknown(cls) -> 'PowerState':
+    def unknown(cls) -> PowerState:
         return cls(on_battery=False)
 
 
-def _proxy(name: str, path: str, iface: str) -> Optional[Gio.DBusProxy]:
+def _proxy(name: str, path: str, iface: str) -> Gio.DBusProxy | None:
     try:
         return Gio.DBusProxy.new_for_bus_sync(
             Gio.BusType.SYSTEM,

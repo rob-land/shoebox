@@ -9,9 +9,9 @@ import time
 from collections import OrderedDict
 from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-from gi.repository import Adw, Gdk, GdkPixbuf, GLib, GObject, Gio, Gtk
+from gi.repository import Adw, Gdk, GdkPixbuf, GLib, GObject, Gtk
 
 from ..database import Asset
 
@@ -26,11 +26,11 @@ log = logging.getLogger(__name__)
 # paint instantly — fixes the "spinner flash on every scroll" problem.
 # 200 entries × ~256 KB decoded each ≈ 50 MB upper bound.
 _TEXTURE_CACHE_LIMIT = 200
-_texture_cache: 'OrderedDict[tuple[int, int], Gdk.Texture]' = OrderedDict()
+_texture_cache: OrderedDict[tuple[int, int], Gdk.Texture] = OrderedDict()
 _texture_cache_lock = threading.Lock()
 
 
-def _texture_cache_get(key: tuple[int, int]) -> Optional[Gdk.Texture]:
+def _texture_cache_get(key: tuple[int, int]) -> Gdk.Texture | None:
     with _texture_cache_lock:
         tex = _texture_cache.get(key)
         if tex is not None:
@@ -79,13 +79,13 @@ def _cache_path(asset: Asset, size: int) -> Path:
 
 
 def _load_thumbnail_bytes(
-    asset: Asset, size: int, backend: Optional['Backend']
-) -> Optional[bytes]:
+    asset: Asset, size: int, backend: Backend | None
+) -> bytes | None:
     cached = _cache_path(asset, size)
     if cached.exists():
         return cached.read_bytes()
 
-    data: Optional[bytes] = None
+    data: bytes | None = None
     if asset.local_path and Path(asset.local_path).is_file():
         try:
             pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
@@ -126,7 +126,7 @@ def _load_thumbnail_bytes(
 # strategy raced the shared Soup.Session and dropped 1/3 to 1/2 of
 # requests. Six is enough to saturate any reasonable Immich and small
 # enough that nothing trips over itself.
-_thumb_pool: Optional[ThreadPoolExecutor] = None
+_thumb_pool: ThreadPoolExecutor | None = None
 
 
 def _get_thumb_pool() -> ThreadPoolExecutor:
@@ -139,7 +139,7 @@ def _get_thumb_pool() -> ThreadPoolExecutor:
 
 
 def _submit_thumbnail(
-    asset: Asset, size: int, backend: Optional['Backend'],
+    asset: Asset, size: int, backend: Backend | None,
     on_done,
 ) -> Future:
     def worker() -> None:
@@ -179,9 +179,9 @@ class ThumbnailTile(Gtk.Overlay):
     def __init__(self):
         super().__init__()
         self._size = 256
-        self._asset: Optional[Asset] = None
+        self._asset: Asset | None = None
         self._select_cb = None  # set by the GridView factory; receives Asset
-        self._pending: Optional[Future] = None
+        self._pending: Future | None = None
 
         long_press = Gtk.GestureLongPress()
         long_press.set_touch_only(False)
@@ -215,7 +215,7 @@ class ThumbnailTile(Gtk.Overlay):
         self,
         asset: Asset,
         size: int,
-        backend: Optional['Backend'],
+        backend: Backend | None,
         *,
         selected: bool = False,
         show_check: bool = False,
@@ -246,7 +246,7 @@ class ThumbnailTile(Gtk.Overlay):
         self.picture.set_paintable(None)
         self.spinner.set_visible(True)
 
-        def done(data: Optional[bytes]) -> None:
+        def done(data: bytes | None) -> None:
             if self._asset is not asset:
                 return  # row was rebound to a different asset
             self._pending = None

@@ -7,8 +7,8 @@ gi.require_version('Adw', '1')
 gi.require_version('Soup', '3.0')
 gi.require_version('Secret', '1')
 
-from .logging_setup import configure_logging
 from .application import ShoeboxApplication
+from .logging_setup import configure_logging
 
 
 def run(version: str) -> int:

@@ -9,12 +9,12 @@ clobbers a field unless the user typed a value into it.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Callable, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from gi.repository import Adw, GLib, Gtk
 
 from .. import exif_writer
-from ..backends import BackendError
 from ..database import Asset, Database
 from ..worker import run_async
 
@@ -33,9 +33,9 @@ class BulkEditDialog(Adw.Dialog):
 
     def __init__(
         self,
-        window: 'ShoeboxWindow',
+        window: ShoeboxWindow,
         assets: list[Asset],
-        on_done: Optional[Callable[[], None]] = None,
+        on_done: Callable[[], None] | None = None,
     ):
         super().__init__()
         self.window = window
@@ -230,7 +230,7 @@ class BulkEditDialog(Adw.Dialog):
         return edits
 
 
-def _apply_one(window: 'ShoeboxWindow', asset: Asset, edits: dict) -> None:
+def _apply_one(window: ShoeboxWindow, asset: Asset, edits: dict) -> None:
     if asset.remote_id:
         backend = window.app.primary_backend()
         if backend is None:

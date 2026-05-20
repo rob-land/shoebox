@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
-
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from . import secrets, settings
-from .backends import BACKENDS, Backend, get as get_backend_cls
+from .backends import BACKENDS, Backend
+from .backends import get as get_backend_cls
 from .database import Account, Database
 from .window import ShoeboxWindow
 
@@ -22,11 +20,11 @@ class ShoeboxApplication(Adw.Application):
         self.version = version
         self.settings = settings.get()
         self.db = Database()
-        self._backend: Optional[Backend] = None
-        self._account: Optional[Account] = None
+        self._backend: Backend | None = None
+        self._account: Account | None = None
         self._background = False
         self._held = False
-        self._sync_timer_id: Optional[int] = None
+        self._sync_timer_id: int | None = None
 
         self.add_main_option(
             'background', ord('b'), GLib.OptionFlags.NONE,
@@ -180,7 +178,7 @@ class ShoeboxApplication(Adw.Application):
 
     # ----- backend access -----
 
-    def primary_account(self) -> Optional[Account]:
+    def primary_account(self) -> Account | None:
         if self._account is None:
             accounts = self.db.list_accounts()
             self._account = accounts[0] if accounts else None
@@ -191,7 +189,7 @@ class ShoeboxApplication(Adw.Application):
         cls = get_backend_cls(account.backend)
         return cls(account.server_url, token=token)
 
-    def primary_backend(self) -> Optional[Backend]:
+    def primary_backend(self) -> Backend | None:
         if self._backend is None:
             account = self.primary_account()
             if account is None:

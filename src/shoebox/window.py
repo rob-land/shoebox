@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-
-from gi.repository import Adw, GObject, Gtk
+from gi.repository import Adw, GObject
 
 if TYPE_CHECKING:
     from .application import ShoeboxApplication
@@ -16,7 +15,7 @@ class ShoeboxWindow(Adw.ApplicationWindow):
 
     compact = GObject.Property(type=bool, default=False)
 
-    def __init__(self, application: 'ShoeboxApplication'):
+    def __init__(self, application: ShoeboxApplication):
         super().__init__(application=application)
         self.app = application
         self.set_title('Shoebox')

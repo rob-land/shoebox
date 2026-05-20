@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-from gi.repository import Adw, Gdk, Gio, GLib, Gtk
+from gi.repository import Adw, Gdk, GLib, Gtk
 
 from ..database import Asset
 from ..worker import run_async
@@ -27,7 +27,7 @@ class DetailPage(Adw.NavigationPage):
     split:           Adw.OverlaySplitView = Gtk.Template.Child()
     sidebar_groups:  Gtk.Box            = Gtk.Template.Child()
 
-    def __init__(self, window: 'ShoeboxWindow', asset: Asset):
+    def __init__(self, window: ShoeboxWindow, asset: Asset):
         super().__init__(title=asset.filename or 'Photo')
         self.window = window
         self.asset = asset
@@ -62,7 +62,7 @@ class DetailPage(Adw.NavigationPage):
     def _load_local(self) -> None:
         path = self.asset.local_path
 
-        def work() -> Optional[bytes]:
+        def work() -> bytes | None:
             try:
                 return Path(path).read_bytes()
             except OSError:
@@ -78,7 +78,7 @@ class DetailPage(Adw.NavigationPage):
             return
         remote_id = self.asset.remote_id
 
-        def work() -> Optional[bytes]:
+        def work() -> bytes | None:
             try:
                 return backend.fetch_original(remote_id)
             except Exception:  # noqa: BLE001
@@ -87,7 +87,7 @@ class DetailPage(Adw.NavigationPage):
         run_async(work, on_done=self._set_bytes,
                   on_error=lambda _e: self._set_bytes(None))
 
-    def _set_bytes(self, data: Optional[bytes]) -> None:
+    def _set_bytes(self, data: bytes | None) -> None:
         self.spinner.set_visible(False)
         if not data:
             self.window.toast('Failed to load image')
@@ -263,7 +263,7 @@ class DetailPage(Adw.NavigationPage):
 # ----- formatting helpers -----------------------------------------------------
 
 
-def _build_group(title: str, rows: list[tuple[Optional[str], str]]) -> Adw.PreferencesGroup:
+def _build_group(title: str, rows: list[tuple[str | None, str]]) -> Adw.PreferencesGroup:
     group = Adw.PreferencesGroup(title=title)
     for label, value in rows:
         if label is None:
@@ -279,14 +279,14 @@ def _build_group(title: str, rows: list[tuple[Optional[str], str]]) -> Adw.Prefe
     return group
 
 
-def _format_dimensions(w: Optional[int], h: Optional[int]) -> str:
+def _format_dimensions(w: int | None, h: int | None) -> str:
     if not w or not h:
         return '—'
     mp = (w * h) / 1_000_000
     return f'{w} × {h}  ·  {mp:.1f} MP' if mp >= 0.05 else f'{w} × {h}'
 
 
-def _format_size(b: Optional[int]) -> str:
+def _format_size(b: int | None) -> str:
     if not b:
         return '—'
     if b < 1024:
@@ -300,14 +300,14 @@ def _format_size(b: Optional[int]) -> str:
     return f'{val:.1f} PB'
 
 
-def _format_date(taken_at: Optional[int]) -> str:
+def _format_date(taken_at: int | None) -> str:
     if not taken_at:
         return '—'
     dt = datetime.fromtimestamp(taken_at)
     return dt.strftime('%A, %-d %B %Y · %H:%M')
 
 
-def _format_camera(make: Optional[str], model: Optional[str]) -> str:
+def _format_camera(make: str | None, model: str | None) -> str:
     if make and model:
         # Most camera models already include the brand; avoid "Canon Canon EOS R5"
         if model.lower().startswith(make.lower()):
@@ -317,8 +317,8 @@ def _format_camera(make: Optional[str], model: Optional[str]) -> str:
 
 
 def _format_settings(
-    iso: Optional[int], f_number: Optional[float],
-    exposure_time: Optional[float], focal_length: Optional[float],
+    iso: int | None, f_number: float | None,
+    exposure_time: float | None, focal_length: float | None,
 ) -> str:
     bits: list[str] = []
     if focal_length:
@@ -342,7 +342,7 @@ def _format_exposure(seconds: float) -> str:
     return f'1/{denom}s'
 
 
-def _format_coords(lat: Optional[float], lon: Optional[float]) -> str:
+def _format_coords(lat: float | None, lon: float | None) -> str:
     if lat is None or lon is None:
         return '—'
     return f'{lat:.5f}, {lon:.5f}'

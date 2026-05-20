@@ -14,13 +14,13 @@ Two modes:
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from datetime import datetime
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING
 
-from gi.repository import Adw, GLib, GObject, Gtk
+from gi.repository import Adw, GLib, Gtk
 
 from .. import exif_writer
-from ..backends import BackendError
 from ..database import Asset, Database
 from ..worker import run_async
 
@@ -36,9 +36,9 @@ class BulkDateDialog(Adw.Dialog):
 
     def __init__(
         self,
-        window: 'ShoeboxWindow',
+        window: ShoeboxWindow,
         assets: list[Asset],
-        on_done: Optional[Callable[[], None]] = None,
+        on_done: Callable[[], None] | None = None,
     ):
         super().__init__()
         # Sort by current taken_at so "anchor first" picks the earliest.
@@ -289,7 +289,7 @@ class BulkDateDialog(Adw.Dialog):
         return int(new_first.timestamp()) - first.taken_at
 
 
-def _apply_one(window: 'ShoeboxWindow', asset: Asset, edits: dict) -> None:
+def _apply_one(window: ShoeboxWindow, asset: Asset, edits: dict) -> None:
     """Push edits for a single asset. Raises on irrecoverable failure."""
     if asset.remote_id:
         backend = window.app.primary_backend()

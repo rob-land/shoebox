@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from datetime import datetime
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING
 
-from gi.repository import Adw, GLib, GObject, Gtk
+from gi.repository import Adw, GLib, Gtk
 
 from .. import exif_writer
 from ..backends import BackendError
@@ -33,9 +34,9 @@ class EditMetadataDialog(Adw.Dialog):
 
     def __init__(
         self,
-        window: 'ShoeboxWindow',
+        window: ShoeboxWindow,
         asset: Asset,
-        on_saved: Optional[Callable[[Asset], None]] = None,
+        on_saved: Callable[[Asset], None] | None = None,
     ):
         super().__init__()
         self.set_title('Edit metadata')
@@ -218,7 +219,7 @@ class EditMetadataDialog(Adw.Dialog):
 
         run_async(work, on_done=done, on_error=error)
 
-    def _collect_edits(self) -> Optional[dict]:
+    def _collect_edits(self) -> dict | None:
         """Return a dict of fields to apply, or None on validation failure."""
         edits: dict = {}
 
@@ -267,7 +268,7 @@ class EditMetadataDialog(Adw.Dialog):
         return edits
 
 
-def _apply_edits(window: 'ShoeboxWindow', asset: Asset, edits: dict) -> str:
+def _apply_edits(window: ShoeboxWindow, asset: Asset, edits: dict) -> str:
     """Push edits to server → local EXIF → catalog. Returns a status message."""
     if not edits:
         return 'No changes'

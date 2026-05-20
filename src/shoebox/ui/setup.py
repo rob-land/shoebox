@@ -10,7 +10,7 @@ through their constructors.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gio, GLib, Gtk
 
@@ -26,11 +26,11 @@ if TYPE_CHECKING:
 class _Wizard:
     """Holds state across wizard pages."""
 
-    def __init__(self, window: 'ShoeboxWindow'):
+    def __init__(self, window: ShoeboxWindow):
         self.window = window
         self.backend_name: str = next(iter(BACKENDS))
         self.server_url: str = ''
-        self.account: Optional[Account] = None
+        self.account: Account | None = None
         self.sync_dirs: list[str] = []
 
 
@@ -221,6 +221,6 @@ class _SetupDirs(Adw.NavigationPage):
 # ---- public entry point ------------------------------------------------------
 
 
-def SetupPage(window: 'ShoeboxWindow') -> Adw.NavigationPage:
+def SetupPage(window: ShoeboxWindow) -> Adw.NavigationPage:
     """Backward-compatible factory returning the welcome page."""
     return _SetupWelcome(_Wizard(window))

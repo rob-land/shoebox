@@ -26,12 +26,11 @@ verbatim copy across cohort apps; only the caller's arguments
 differ.
 """
 
+import logging
 import os
 from pathlib import Path
 
 from gi.repository import GLib
-
-import logging
 
 log = logging.getLogger(__name__)
 

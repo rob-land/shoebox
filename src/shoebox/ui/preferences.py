@@ -37,7 +37,7 @@ class PreferencesDialog(Adw.PreferencesDialog):
     folders_group:     Adw.PreferencesGroup = Gtk.Template.Child()
     add_folder_row:    Adw.ButtonRow  = Gtk.Template.Child()
 
-    def __init__(self, app: 'ShoeboxApplication'):
+    def __init__(self, app: ShoeboxApplication):
         super().__init__()
         self.app = app
         self._folder_rows: dict[str, Adw.ActionRow] = {}

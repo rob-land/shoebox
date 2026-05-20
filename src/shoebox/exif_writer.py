@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Optional
 
 from gi.repository import GLib
 
@@ -45,10 +44,10 @@ def is_available() -> bool:
 def write_metadata(
     path: str,
     *,
-    taken_at: Optional[int] = None,
-    latitude: Optional[float] = None,
-    longitude: Optional[float] = None,
-    description: Optional[str] = None,
+    taken_at: int | None = None,
+    latitude: float | None = None,
+    longitude: float | None = None,
+    description: str | None = None,
 ) -> bool:
     """Write the given fields into the file's EXIF/XMP tags.
 
