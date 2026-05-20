@@ -122,7 +122,7 @@ class ShoeboxApplication(Adw.Application):
             return True
         try:
             from .sync.manager import SyncManager
-            mgr = SyncManager(self.db, backend, account)
+            mgr = SyncManager(self, account, backend)
             mgr.run()
         except Exception:
             # Don't let a transient sync failure tear down the timer.
