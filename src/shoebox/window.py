@@ -91,9 +91,8 @@ class ShoeboxWindow(Adw.ApplicationWindow):
 
     def _on_close_request(self, *_args) -> bool:
         s = self.app.settings
-        width, height = self.get_default_size()
-        s.set_int('window-width', width)
-        s.set_int('window-height', height)
+        s.set_int('window-width', self.get_width())
+        s.set_int('window-height', self.get_height())
         s.set_boolean('window-maximized', self.is_maximized())
         # If the user has opted into close-to-background, hide and
         # hold so the periodic sync timer keeps running. Otherwise

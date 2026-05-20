@@ -15,6 +15,7 @@ shoebox_sources = [
   'shoebox/window.py',
   'shoebox/database.py',
   'shoebox/exif_writer.py',
+  'shoebox/logging_setup.py',
   'shoebox/secrets.py',
   'shoebox/settings.py',
   'shoebox/worker.py',
