@@ -67,6 +67,8 @@ def _desktop_file_body(app_name: str, commandline: list) -> str:
         f"Name={app_name}\n"
         f"Exec={exec_line}\n"
         "X-GNOME-Autostart-enabled=true\n"
+        "X-GNOME-Autostart-Phase=Applications\n"
+        "X-GNOME-Autostart-Delay=3\n"
         "NoDisplay=true\n"
     )
 
