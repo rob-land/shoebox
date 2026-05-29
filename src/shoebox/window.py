@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from gi.repository import Adw, GObject
+from gi.repository import Adw, Gio, GLib, GObject
 
 if TYPE_CHECKING:
     from .application import ShoeboxApplication
@@ -37,6 +37,13 @@ class ShoeboxWindow(Adw.ApplicationWindow):
         )
         breakpoint_.add_setter(self, 'compact', True)
         self.add_breakpoint(breakpoint_)
+
+        # Suite-standard window action: any child widget can fire a
+        # toast via widget.activate_action("win.toast", GLib.Variant("s", msg)).
+        toast_action = Gio.SimpleAction.new('toast', GLib.VariantType.new('s'))
+        toast_action.connect('activate',
+            lambda _a, p: self._toast_overlay.add_toast(Adw.Toast.new(p.get_string())))
+        self.add_action(toast_action)
 
         self._show_initial_page()
 
