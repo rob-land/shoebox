@@ -97,3 +97,10 @@ tests/
   reason — flag them in commit messages so Flathub review is easier.
 - Tokens go through `secrets.py` (libsecret). Never write tokens to
   GSettings, the catalog, or stdout.
+- Remote sync rides Immich's v2 change feed (`/api/sync/stream` +
+  `/api/sync/ack`), which requires a *session* token from password
+  login — Immich rejects API keys there. Checkpoints live server-side
+  per session; the `change-feed-ready` account_state flag decides when
+  to request a reset (full) feed. Never issue a blocking libsoup call
+  on the thread-default main context while the feed's response stream
+  is open — that recurses inside libsoup; see `_send_acks`.

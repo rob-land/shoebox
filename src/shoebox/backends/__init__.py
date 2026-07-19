@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from typing import Type
 
-from .base import Backend, BackendError, RemoteAsset
+from .base import (
+    Backend, BackendError, RemoteAsset, RemoteChange, SyncResetRequired,
+)
 from .immich import ImmichBackend
 
 # Registry of available backends keyed by short name.
@@ -19,4 +21,7 @@ def get(name: str) -> type[Backend]:
     return BACKENDS[name]
 
 
-__all__ = ['Backend', 'BackendError', 'RemoteAsset', 'BACKENDS', 'get']
+__all__ = [
+    'Backend', 'BackendError', 'RemoteAsset', 'RemoteChange',
+    'SyncResetRequired', 'BACKENDS', 'get',
+]

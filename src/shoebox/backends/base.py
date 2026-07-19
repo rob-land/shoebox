@@ -15,6 +15,16 @@ class BackendError(Exception):
     """Raised when a backend call fails (network, auth, server)."""
 
 
+class SyncResetRequired(BackendError):
+    """The backend lost the change-feed checkpoint; re-sync from scratch.
+
+    Raised by Backend.sync_changes when the server can no longer resume
+    from the last acknowledged position (expired or missing checkpoint).
+    The caller should restart with ``sync_changes(reset=True)`` and treat
+    the result as the complete server state.
+    """
+
+
 @dataclass
 class RemoteAsset:
     remote_id: str
@@ -40,6 +50,30 @@ class RemoteAsset:
     focal_length: float | None = None   # mm
     orientation: int | None = None
     description: str | None = None
+
+
+@dataclass
+class RemoteChange:
+    """One entry from a backend change feed (see Backend.sync_changes).
+
+    *kind* is one of:
+      'upsert'   — the asset was created or updated; a catalog row may
+                   be created if none exists yet.
+      'patch'    — secondary metadata (e.g. EXIF) for an asset that
+                   should already have a row; dropped if the row is gone.
+      'delete'   — the asset was removed (or hidden) server-side.
+      'complete' — sentinel: the feed reached the server's current head.
+                   A feed may end early *without* this (e.g. a proxy cut
+                   the response); callers re-pull until they see it.
+
+    *fields* maps RemoteAsset field names to new values. Only the named
+    fields changed; an explicit None clears the stored value. Deletions
+    and the completion sentinel carry no fields (and 'complete' has an
+    empty remote_id).
+    """
+    kind: str
+    remote_id: str
+    fields: dict[str, object] | None = None
 
 
 @dataclass
@@ -108,6 +142,28 @@ class Backend(ABC):
     @abstractmethod
     def asset_exists(self, checksum: str) -> str | None:
         """Check whether an asset with this checksum exists; return remote_id or None."""
+
+    def sync_changes(self, *, reset: bool = False) -> Iterator[RemoteChange]:
+        """Yield changes since the last acknowledged sync checkpoint.
+
+        Optional capability: backends without a change feed raise
+        NotImplementedError, and the caller should fall back to polling
+        with fetch_page.
+
+        With ``reset=True`` the feed restarts from scratch and re-yields
+        every asset; the caller should reconcile rows it didn't see.
+        Raises SyncResetRequired when the server demands such a restart.
+
+        The iterator ends either at a RemoteChange(kind='complete')
+        sentinel (feed fully drained) or early when the transport cuts
+        the response; in the latter case the caller should just call
+        again — progress is checkpointed, so the next call resumes.
+
+        Implementations acknowledge progress to the server as the caller
+        consumes the iterator, so each change must be durably applied
+        before advancing to the next one.
+        """
+        raise NotImplementedError
 
     def search_smart(self, query: str, *, limit: int = 100) -> list[RemoteAsset]:
         """Natural-language search across the backend's library.

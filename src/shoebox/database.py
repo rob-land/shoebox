@@ -10,7 +10,7 @@ from pathlib import Path
 
 from gi.repository import GLib
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta (
@@ -75,6 +75,15 @@ CREATE TABLE IF NOT EXISTS sync_dirs (
   recursive INTEGER NOT NULL DEFAULT 1,
   UNIQUE(account_id, path)
 );
+
+-- v3: small per-account key/value store for sync bookkeeping
+-- (e.g. whether the change-feed checkpoint is established).
+CREATE TABLE IF NOT EXISTS account_state (
+  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  key TEXT NOT NULL,
+  value TEXT,
+  PRIMARY KEY (account_id, key)
+);
 """
 
 # Schema migrations keyed by from-version → SQL that lifts to from-version+1.
@@ -96,7 +105,21 @@ _MIGRATIONS: dict[int, str] = {
         ALTER TABLE assets ADD COLUMN orientation INTEGER;
         ALTER TABLE assets ADD COLUMN description TEXT;
     """,
+    # v2 → v3: account_state is CREATE TABLE IF NOT EXISTS in SCHEMA, so
+    # existing catalogs pick it up there; the migration only bumps the
+    # recorded version.
+    2: '',
 }
+
+
+# Columns a backend change feed may write through patch_remote_asset().
+_REMOTE_PATCH_COLUMNS = frozenset({
+    'checksum', 'filename', 'mime_type', 'width', 'height', 'taken_at',
+    'size_bytes', 'is_favorite', 'latitude', 'longitude', 'place_city',
+    'place_state', 'place_country', 'camera_make', 'camera_model', 'lens',
+    'iso', 'f_number', 'exposure_time', 'focal_length', 'orientation',
+    'description',
+})
 
 
 @dataclass
@@ -296,6 +319,24 @@ class Database:
         )
         return [(r['path'], bool(r['recursive'])) for r in cur.fetchall()]
 
+    # ----- per-account sync state -----
+
+    def get_account_state(self, account_id: int, key: str) -> str | None:
+        cur = self._conn.execute(
+            'SELECT value FROM account_state WHERE account_id = ? AND key = ?',
+            (account_id, key),
+        )
+        row = cur.fetchone()
+        return row['value'] if row else None
+
+    def set_account_state(self, account_id: int, key: str, value: str) -> None:
+        self._conn.execute(
+            """INSERT INTO account_state (account_id, key, value)
+               VALUES (?, ?, ?)
+               ON CONFLICT(account_id, key) DO UPDATE SET value = excluded.value""",
+            (account_id, key, value),
+        )
+
     # ----- assets -----
 
     def upsert_remote_asset(
@@ -409,6 +450,99 @@ class Database:
             (account_id, remote_id, checksum, filename, mime_type,
              width, height, taken_at, size_bytes, *exif_cols),
         )
+
+    def patch_remote_asset(
+        self,
+        account_id: int,
+        remote_id: str,
+        fields: dict,
+        *,
+        create: bool = True,
+    ) -> None:
+        """Apply a partial update from a backend change feed.
+
+        Only the columns named in *fields* change; an explicit None
+        clears the stored value. With ``create=False`` the patch is
+        dropped when no row exists — used for secondary feeds (EXIF)
+        that must not resurrect deleted assets.
+        """
+        unknown = set(fields) - _REMOTE_PATCH_COLUMNS
+        if unknown:
+            raise ValueError(f'unpatchable columns: {sorted(unknown)}')
+        fields = dict(fields)
+        if 'is_favorite' in fields:
+            # NOT NULL column with a boolean payload.
+            fields['is_favorite'] = 1 if fields['is_favorite'] else 0
+
+        cur = self._conn.execute(
+            'SELECT id FROM assets WHERE account_id = ? AND remote_id = ?',
+            (account_id, remote_id),
+        )
+        row = cur.fetchone()
+        if row is None and fields.get('checksum'):
+            # A local-only row with the same content becomes the synced row.
+            cur = self._conn.execute(
+                """SELECT id FROM assets
+                   WHERE account_id = ? AND checksum = ? AND remote_id IS NULL""",
+                (account_id, fields['checksum']),
+            )
+            row = cur.fetchone()
+            if row is not None:
+                self._conn.execute(
+                    "UPDATE assets SET remote_id = ?, sync_state = 'synced' WHERE id = ?",
+                    (remote_id, row['id']),
+                )
+
+        if row is None:
+            if not create:
+                return
+            columns = ['account_id', 'remote_id', 'sync_state', *fields]
+            placeholders = ', '.join('?' * len(columns))
+            self._conn.execute(
+                f'INSERT INTO assets ({", ".join(columns)}) VALUES ({placeholders})',
+                (account_id, remote_id, 'server_only', *fields.values()),
+            )
+        elif fields:
+            sets = ', '.join(f'{c} = ?' for c in fields)
+            self._conn.execute(
+                f'UPDATE assets SET {sets} WHERE id = ?',
+                (*fields.values(), row['id']),
+            )
+
+    def delete_remote_asset(self, account_id: int, remote_id: str) -> None:
+        """Remove a server-deleted asset from the catalog.
+
+        Rows that also reference a local file only lose their server link
+        (state 'remote_deleted', so they aren't re-uploaded); server-only
+        rows are dropped entirely.
+        """
+        cur = self._conn.execute(
+            'SELECT id, local_path FROM assets WHERE account_id = ? AND remote_id = ?',
+            (account_id, remote_id),
+        )
+        row = cur.fetchone()
+        if row is None:
+            return
+        if row['local_path']:
+            self._conn.execute(
+                """UPDATE assets SET remote_id = NULL, sync_state = 'remote_deleted'
+                   WHERE id = ?""",
+                (row['id'],),
+            )
+        else:
+            self._conn.execute('DELETE FROM assets WHERE id = ?', (row['id'],))
+
+    def sweep_remote_assets(self, account_id: int, keep: set[str]) -> int:
+        """Reconcile after a full change-feed resync: drop remote rows the
+        feed didn't mention. Returns the number of rows swept."""
+        cur = self._conn.execute(
+            'SELECT remote_id FROM assets WHERE account_id = ? AND remote_id IS NOT NULL',
+            (account_id,),
+        )
+        stale = [r['remote_id'] for r in cur.fetchall() if r['remote_id'] not in keep]
+        for remote_id in stale:
+            self.delete_remote_asset(account_id, remote_id)
+        return len(stale)
 
     def upsert_local_asset(
         self,
